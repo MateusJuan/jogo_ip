@@ -11,13 +11,13 @@ pygame.init()
 # ============================================================
 
 TAMANHO_CELULA = 40
-TAMANHO_MAPA = 16
+TAMANHO_MAPA = 17
 
 LARGURA = TAMANHO_MAPA * TAMANHO_CELULA
 ALTURA = TAMANHO_MAPA * TAMANHO_CELULA
 
 tela = pygame.display.set_mode((LARGURA, ALTURA))
-pygame.display.set_caption("Arena")
+pygame.display.set_caption("Lost Ruins: Hords of Dooms")
 
 clock = pygame.time.Clock()
 
@@ -92,25 +92,31 @@ for y in range(TAMANHO_MAPA):
 
 centro = TAMANHO_MAPA // 2 - 1
 
-# Entrada de cima
+# ============================================================
+# CRIAR AS 4 ENTRADAS
+# ============================================================
 
+# Cada entrada terá 3 células de largura.
+
+# Entrada de cima
 mapa[0][centro] = 0
 mapa[0][centro + 1] = 0
+mapa[0][centro + 2] = 0
 
 # Entrada de baixo
-
 mapa[TAMANHO_MAPA - 1][centro] = 0
 mapa[TAMANHO_MAPA - 1][centro + 1] = 0
+mapa[TAMANHO_MAPA - 1][centro + 2] = 0
 
 # Entrada da esquerda
-
 mapa[centro][0] = 0
 mapa[centro + 1][0] = 0
+mapa[centro + 2][0] = 0
 
 # Entrada da direita
-
 mapa[centro][TAMANHO_MAPA - 1] = 0
 mapa[centro + 1][TAMANHO_MAPA - 1] = 0
+mapa[centro + 2][TAMANHO_MAPA - 1] = 0
 
 # ============================================================
 # JOGADOR
