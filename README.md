@@ -1,4 +1,4 @@
-# Lost Ruins: Hords of Dooms
+# Lost Ruins: Hords of Doom
 
 O personagem nasce no lobby, o pátio das ruínas, e sobe o castelo por uma escada. Cada andar é um mapa com chão e obstáculos próprios. A ordem é Lobby, Salão, Galeria e Torre. A Torre é o último andar.
 
