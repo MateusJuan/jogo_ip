@@ -3,7 +3,7 @@ PASTA_ASSETS = "assets"
 
 # dimensões da grade e da janela:
 # cada célula tem 40x40 pixels e o mapa é uma matriz 17x17 (680x680 pixels).
-TAMANHO_CELULA = 40
+TAMANHO_CELULA = 50
 TAMANHO_MAPA = 17
 LARGURA = TAMANHO_MAPA * TAMANHO_CELULA
 ALTURA = TAMANHO_MAPA * TAMANHO_CELULA
