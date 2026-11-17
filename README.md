@@ -1,32 +1,46 @@
 # Lost Ruins: Hords of Doom
 
-O personagem nasce no lobby, o pátio das ruínas, e sobe o castelo por uma escada. Cada andar é um mapa com chão e obstáculos próprios. A ordem é Lobby, Salão, Galeria e Torre. A Torre é o último andar.
+Jogo de exploração de masmorra (*dungeon crawler*) desenvolvido para a disciplina de **Introdução à Programação**. O personagem nasce no **Lobby** (pátio das ruínas) e sobe os andares do castelo através de escadas até alcançar o topo.
 
-Para instalar e abrir o jogo, siga o `comoRodar.txt`.
+## Andares do Castelo
 
-## Arquivos
+1. **Lobby:** Pátio inicial aberto com escada ao norte.
+2. **Andar 1 – Salão:** Sala interna com obstáculos de entulho e acesso para o andar superior e inferior.
+3. **Andar 2 – Galeria:** Sala com abismos no piso e caminho estreito até a próxima escada.
+4. **Andar 3 – Torre:** Topo do castelo com pilares e altar central.
 
-| Arquivo | Função |
-| --- | --- |
-| `main.py` | Ponto de entrada. Só cria a aplicação e inicia o jogo. |
-| `comoRodar.txt` | Passo a passo para a equipe configurar a máquina e rodar o jogo. |
-| `requirements.txt` | Dependência do projeto. Hoje é o pygame 2.6.1. |
-| `README.md` | Este arquivo. Explica o que cada parte do repositório faz. |
-| `.vscode/settings.json` | Aponta o editor para o interpretador do ambiente `.venv`. |
+## Controles e Mecânicas Implementadas
 
-## Pacote `jogo`
+* **Movimentação (`W A S D` ou `Setas`):** Deslize suave alinhado à grade de `17x17` células.
+* **Transição de Andares:** Pisar nas escadas ao norte (sobe) ou ao sul (desce) transporta o personagem para o próximo mapa.
+* **Sistema de Vida (HUD):** Barra superior esquerda com **3 corações** (suportando dano de `0.5` coração).
+* **Invulnerabilidade e Hitstun:** Ao sofrer dano, o personagem pisca enquanto está invulnerável e fica momentaneamente paralisado pelo impacto.
+* **Queda em Buracos:** Na Galeria, pisar em um buraco desconta `0.5` coração, paralisa o jogador por `1.0s` e o devolve para uma célula segura antes da beirada.
 
-| Arquivo | Função |
-| --- | --- |
-| `jogo/__init__.py` | Marca a pasta `jogo` como um pacote Python. Não tem código. |
-| `jogo/aplicacao.py` | Janela, relógio e loop principal. Troca de andar quando o personagem pisa numa escada e desenha o nome do piso. |
-| `jogo/configuracoes.py` | Tamanho do mapa, da célula e da janela, FPS, velocidade do personagem, título e caminho da pasta `assets`. |
-| `jogo/jogador.py` | Movimento suave de célula em célula, teclas e posição do personagem. |
-| `jogo/mapa.py` | Decide se uma célula pode ser pisada e desenha o andar, inclusive as escadas. |
-| `jogo/mundos.py` | Monta os quatro mapas e liga a escada de cada um ao andar de cima ou de baixo. |
-| `jogo/blocos.py` | Números de cada tipo de bloco, quais bloqueiam o passo e qual imagem cada um usa. |
-| `jogo/recursos.py` | Carrega e redimensiona as imagens da pasta `assets`. |
+## Padrão de Código (Restrições da Disciplina)
 
-## Pasta `assets`
+Todo o código segue estritamente as permissões das listas de Introdução à Programação:
+* **Sem classes, `sets`, `None`, `break` ou `continue`.**
+* Entidades como o jogador, os mapas e a aplicação são representadas por **dicionários** manipulados por funções puras.
 
-Imagens usadas pelo jogo. O piso e os muros de cada andar têm arquivos próprios. O personagem está em `personagem.png`. A grama do lobby está em `grama.png` e o muro do lobby em `muro.png`.
+## Estrutura do Projeto
+
+| Arquivo / Pasta | Função |
+| :--- | :--- |
+| `main.py` | Ponto de entrada que inicia o loop principal do jogo. |
+| `COMO_RODAR.md` | Passo a passo de instalação e solução de problemas de versão do Python. |
+| `GUIA_GIT.md` | Comandos essenciais de Git para a equipe trabalhar em branches separadas. |
+| `requirements.txt` | Dependência externa do projeto (`pygame`). |
+| `assets/` | Texturas `.png` dos pisos, paredes, obstáculos e personagem. |
+| `jogo/aplicacao.py` | Janela, relógio (`FPS`), loop principal, troca de andares e desenho do HUD. |
+| `jogo/configuracoes.py` | Dimensões da tela e da matriz (`17x17`), velocidade, FPS e caminho dos assets. |
+| `jogo/blocos.py` | Códigos numéricos dos terrenos, listas de obstáculos/buracos e mapa de imagens. |
+| `jogo/recursos.py` | Carregamento e redimensionamento das imagens da pasta `assets/`. |
+| `jogo/mapa.py` | Verificação de colisão, detecção de buracos e renderização da grade e escadas. |
+| `jogo/mundos.py` | Construção das matrizes e ligações de escadas dos 4 andares. |
+| `jogo/jogador.py` | Estado do personagem, movimentação na grade, dano, piscar e histórico de passos seguros. |
+
+## Como Começar
+
+* Para instalar e abrir o jogo na sua máquina, siga o **[COMO_RODAR.md](COMO_RODAR.md)**.
+* Para enviar suas alterações para o GitHub sem conflitos, siga o **[GUIA_GIT.md](GUIA_GIT.md)**.
