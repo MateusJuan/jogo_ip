@@ -84,18 +84,37 @@ class Aplicacao:
         self.tela.blit(texto, texto.get_rect(center=fundo.center))
 
     def _desenhar_vida(self):
-        # desenha os 3 corações no canto superior esquerdo (cheio, meio ou vazio).
-        for i in range(3):
-            x = 12 + i * 32
-            y = 12
-
-            if self.jogador.vida >= i + 1:
-                # coração inteiro (quadrado vermelho).
-                pygame.draw.rect(self.tela, (220, 40, 60), (x, y, 24, 24))
-            elif self.jogador.vida >= i + 0.5:
-                # meio coração (fundo escuro com metade esquerda vermelha).
-                pygame.draw.rect(self.tela, (60, 40, 45), (x, y, 24, 24))
-                pygame.draw.rect(self.tela, (220, 40, 60), (x, y, 12, 24))
-            else:
-                # coração vazio (quadrado escuro).
-                pygame.draw.rect(self.tela, (60, 40, 45), (x, y, 24, 24))
+        # Cada caractere representa um pixel de 3x3, sem suavizacao.
+        desenho = (
+            "..###.###..",
+            ".#rrr#rrr#.",
+            "#rHHrrrrrr#",
+            "#rHrrrrrrr#",
+            "#rrrrrrrrr#",
+            ".#rrrrrrr#.",
+            "..#rsssr#..",
+            "...#sss#...",
+            "....#s#....",
+            ".....#.....",
+        )
+        cores = {
+            "#": (28, 15, 27),
+            "r": (230, 48, 73),
+            "H": (255, 158, 164),
+            "s": (163, 28, 55),
+        }
+        tamanho_pixel = 3
+        for i in range(int(self.jogador.vida_max)):
+            preenchimento = max(0.0, min(1.0, self.jogador.vida - i))
+            x = 12 + i * 39
+            for linha, pixels in enumerate(desenho):
+                for coluna, pixel in enumerate(pixels):
+                    if pixel != ".":
+                        cor = cores[pixel]
+                        if pixel != "#" and coluna >= len(pixels) * preenchimento:
+                            cor = (65, 43, 56) if pixel != "s" else (45, 29, 40)
+                        pygame.draw.rect(
+                            self.tela, cor,
+                            (x + coluna * tamanho_pixel, 12 + linha * tamanho_pixel,
+                             tamanho_pixel, tamanho_pixel),
+                        )
