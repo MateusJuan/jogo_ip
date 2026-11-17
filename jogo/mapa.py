@@ -10,21 +10,21 @@ def pode_andar(mundo, x, y):
     if x < 0 or y < 0 or x >= TAMANHO_MAPA or y >= TAMANHO_MAPA:
         return False
     # escadas ficam na borda (onde normalmente há parede), mas permitem passagem.
-    if (x, y) in mundo["escadas"]:
+    if (x, y) in mundo.escadas:
         return True
     # na matriz usamos [y][x], pois 'y' representa a linha e 'x' a coluna.
-    return mundo["grade"][y][x] not in SOLIDOS
+    return mundo.grade[y][x] not in SOLIDOS
 
 
 def desenhar_mapa(tela, mundo, imagens):
     # percorre a matriz do andar atual e desenha cada bloco e escada na tela.
-    for y, linha in enumerate(mundo["grade"]):
+    for y, linha in enumerate(mundo.grade):
         for x, bloco in enumerate(linha):
             nome_imagem = IMAGENS[bloco]
             tela.blit(imagens[nome_imagem], (x * TAMANHO_CELULA, y * TAMANHO_CELULA))
 
     # desenha as escadas por cima do piso nas posições cadastradas no mundo.
-    for (x, y), escada in mundo["escadas"].items():
+    for (x, y), escada in mundo.escadas.items():
         _desenhar_escada(tela, x, y, escada["sobe"])
 
 
@@ -51,7 +51,7 @@ def _desenhar_escada(tela, x, y, sobe):
 
 
 def identificando_buraco(mundo, x, y):
-    # retorna True se a célula (x, y) for um buraco no chão.
+    # retorna true se a célula (x, y) for um buraco no chão.
     if x < 0 or y < 0 or x >= TAMANHO_MAPA or y >= TAMANHO_MAPA:
         return False
-    return mundo["grade"][y][x] in BURACOS
+    return mundo.grade[y][x] in BURACOS

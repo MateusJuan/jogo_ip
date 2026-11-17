@@ -1,7 +1,7 @@
-# ponto de entrada do programa: importa e inicia o loop principal do jogo.
-from jogo.aplicacao import executar_aplicacao
+# ponto de entrada do programa: instancia a aplicação e inicia o loop do jogo.
+from jogo.aplicacao import Aplicacao
 
 
 # garante que o jogo só rode quando este arquivo for executado diretamente.
 if __name__ == "__main__":
-    executar_aplicacao()
+    Aplicacao().executar()
