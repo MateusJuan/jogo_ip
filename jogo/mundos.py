@@ -18,11 +18,12 @@ from jogo.configuracoes import TAMANHO_MAPA
 
 class Mundo:
     # representa um andar do castelo com identificador, nome, matriz de blocos e escadas.
-    def __init__(self, ident, nome, grade, escadas):
+    def __init__(self, ident, nome, grade, escadas, baus=None):
         self.ident = ident
         self.nome = nome
         self.grade = grade
         self.escadas = escadas
+        self.baus = baus or {} #depois colcoar a espada dentro do bau da entrada da masmorra
         self.abertura_porta = 0.0
         self.porta_ativada = False
 
@@ -91,8 +92,9 @@ def _criar_lobby():
     _preencher(grade, 8, 1, 10, 6, GALERIA_CHAO)
     _preencher(grade, 6, 1, 12, 3, GALERIA_CHAO)
     grade[2][11] = BAU_FECHADO
+    baus = {(11, 2): ["Espada"]}
     escadas = _escada("norte", "salao", 8, 15, True)
-    return Mundo("lobby", "Entrada da Masmorra", grade, escadas)
+    return Mundo("lobby", "Entrada da Masmorra", grade, escadas, baus)
 
 
 def _criar_salao():

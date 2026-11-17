@@ -7,6 +7,8 @@ from jogo.jogador import Jogador
 from jogo.mapa import atualizar_porta, desenhar_mapa
 from jogo.mundos import criar_mundos
 from jogo.recursos import carregar_imagens
+from jogo.blocos import BAU_ABERTO, BAU_FECHADO
+from jogo.mapa import atualizar_porta, desenhar_mapa, obter_bau_proximo
 
 
 class Aplicacao:
@@ -30,6 +32,8 @@ class Aplicacao:
             self.imagens["caminhada_frente"], self.imagens["respiracao_direita"]
         )
         self.rodando = True
+        self.mensagem_bau = ""
+        self.tempo_mensage = 0.0
 
     def executar(self):
         # loop principal do jogo: processa eventos, atualiza a lógica e redesenha a tela a cada quadro.
@@ -41,6 +45,10 @@ class Aplicacao:
             self.jogador.atualizar(dt, pygame.key.get_pressed(), self.mundo)
             self._verificar_escada()
             self._desenhar()
+            if self.tempo_mensage > 0:
+                self.tempo_mensage -= dt
+                if self.tempo_ensagem <= 0:
+                    self.mensaagem_bau = ""
         pygame.quit()
 
     def _eventos(self):
@@ -48,7 +56,20 @@ class Aplicacao:
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 self.rodando = False
-
+            elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_f:
+                self._interagir_bau()
+    def _interagir_bau(self):
+        pos_bau = obter_bau_proximo(self.mundo, self.jogador)
+        if not pos_bau:
+            return
+        bx, by = pos_bau
+        #abre o baú
+        self.mundo.grade[by][bx] = BAU_ABERTO
+        itens = self.mundo.baus.get[pos_bau]
+        texto_itens = ", ".join(itens) if itens else "vazio"
+        self.mensagem_bau = f"Baú aberto! Você encontrou: {texto_itens}"
+        sef.tempo_mensage = 4.0 #deixa visivle por 4 segundos
+    
     def _verificar_escada(self):
         # troca de andar caso o personagem tenha parado exatamente sobre uma célula de escada.
         if self.jogador.em_movimento:
@@ -77,6 +98,7 @@ class Aplicacao:
         )
         self._desenhar_nome()
         self._desenhar_vida()
+        self._desenhar_mensagem_bau()
         pygame.display.flip()
 
     def _desenhar_nome(self):
@@ -121,3 +143,10 @@ class Aplicacao:
                             (x + coluna * tamanho_pixel, 12 + linha * tamanho_pixel,
                              tamanho_pixel, tamanho_pixel),
                         )
+    def _desenhar_mensagem_bau(self):
+        if not self.mensagem_bau:
+            return
+        texto = self.fonte.render(self.mensagem_bau, True, (255, 255, 255))
+        fundo = texto.get_rect(center=(LARGURA // 2, ALTURA - 32)).inflate(12, 8)
+        pygame.draw.rect(self.tela, (0, 0, 0), fundo)
+        self.tela.blit(texto, texto.get_rect(center=fundo.center))
