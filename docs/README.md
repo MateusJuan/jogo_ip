@@ -12,6 +12,9 @@ Jogo de exploração de masmorra (*dungeon crawler*) desenvolvido para a discipl
 ## Controles e Mecânicas Implementadas
 
 * **Movimentação (`W A S D` ou `Setas`):** Deslize suave alinhado à grade de `17x17` células.
+* **Tutorial na entrada (`H`):** Abre somente ao pressionar `H` e explica os movimentos, a vida, as quedas, a proteção após dano, os baús e o portão. A exploração fica pausada durante a leitura. Pressione `H`, `Enter` ou `Esc` para voltar ao jogo. Ao iniciar ou reiniciar uma partida, o tutorial permanece fechado.
+* **Textos e interface:** Fonte Cinzel com aparência de inscrições antigas, renderizada sem suavização e ampliada em pixels de `2x2`. O tutorial usa uma moldura de pedra pixelada. A fonte e sua licença estão incluídas em `assets/fontes/`.
+* **Baús (`F`):** Fique ao lado de um baú fechado para ver a dica de interação e pressione `F` para abri-lo.
 * **Animações do personagem:** Corrida lateral com os 10 quadros de `personagem_corrida_x.png` e respiração com os 16 quadros de `New Piskel.png`, enviados por SrFaisca. As sequências são espelhadas para a esquerda, e o personagem mantém a direção ao parar. A subida usa a sequência de costas existente.
 * **Transição de Andares:** Pisar nas escadas ao norte (sobe) ou ao sul (desce) transporta o personagem para o próximo mapa.
 * **Sistema de Vida (HUD):** Barra superior esquerda com **3 corações** (suportando dano de `0.5` coração).

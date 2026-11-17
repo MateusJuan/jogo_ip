@@ -9,6 +9,7 @@ from jogo.mundos import criar_mundos
 from jogo.recursos import carregar_imagens
 from jogo.blocos import BAU_ABERTO, BAU_FECHADO
 from jogo.mapa import atualizar_porta, desenhar_mapa, obter_bau_proximo
+from jogo.textos import carregar_fonte, renderizar_texto
 
 
 class Aplicacao:
@@ -21,7 +22,7 @@ class Aplicacao:
         self.camera = pygame.Rect(0, 0, LARGURA // ZOOM_CAMERA, ALTURA // ZOOM_CAMERA)
         pygame.display.set_caption(TITULO)
         self.clock = pygame.time.Clock()
-        self.fonte = pygame.font.SysFont("arial", 20)
+        self.fonte = carregar_fonte(20)
         self.imagens = carregar_imagens()
         self.mundos = criar_mundos()
         self.mundo = self.mundos["lobby"]
@@ -36,8 +37,13 @@ class Aplicacao:
         self.mensagem_bau = ""
         self.tempo_mensage = 0.0
         self.opcao_game_over = 0
-        self.fonte_titulo = pygame.font.SysFont("arial", 52, bold=True)
-        self.fonte_opcao = pygame.font.SysFont("arial", 28, bold=True)
+        self.fonte_titulo = carregar_fonte(52, negrito=True)
+        self.fonte_opcao = carregar_fonte(28, negrito=True)
+        self.fonte_tutorial = carregar_fonte(20)
+        self.fonte_tutorial_rotulo = carregar_fonte(16, negrito=True)
+        self.fonte_tutorial_destaque = carregar_fonte(20, negrito=True)
+        self.fonte_tutorial_titulo = carregar_fonte(28, negrito=True)
+        self.tutorial_aberto = False
 
     def executar(self):
         # loop principal do jogo: processa eventos, atualiza a lógica e redesenha a tela a cada quadro.
@@ -45,14 +51,12 @@ class Aplicacao:
             # o dt (delta time) mede o tempo em segundos desde o último quadro (limitado a 0.05s).
             dt = min(self.clock.tick(FPS) / 1000.0, 0.05)
             self._eventos()
-            if not self.jogador.game_over:
+            if not self.jogador.game_over and not self._tutorial_visivel():
                 atualizar_porta(self.mundo, self.jogador, dt)
                 self.jogador.atualizar(dt, pygame.key.get_pressed(), self.mundo)
                 self._verificar_escada()
-            else:
-                self._desenhar_game_over()
             self._desenhar()
-            if self.tempo_mensage > 0:
+            if self.tempo_mensage > 0 and not self._tutorial_visivel():
                 self.tempo_mensage -= dt
                 if self.tempo_mensage <= 0:
                     self.mensagem_bau = ""
@@ -72,8 +76,17 @@ class Aplicacao:
                         self._reiniciar()
                     else:
                         self.rodando = False
-            elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_f:
-                self._interagir_bau()
+            elif evento.type == pygame.KEYDOWN:
+                if evento.key == pygame.K_h and self.mundo.ident == "lobby":
+                    self.tutorial_aberto = not self.tutorial_aberto
+                elif self._tutorial_visivel():
+                    if evento.key in (pygame.K_RETURN, pygame.K_ESCAPE):
+                        self.tutorial_aberto = False
+                elif evento.key == pygame.K_f:
+                    self._interagir_bau()
+
+    def _tutorial_visivel(self):
+        return self.tutorial_aberto and self.mundo.ident == "lobby" and not self.jogador.game_over
 
     def _interagir_bau(self):
         pos_bau = obter_bau_proximo(self.mundo, self.jogador)
@@ -97,6 +110,7 @@ class Aplicacao:
         escada = self.mundo.escadas[posicao]
         self.mundo = self.mundos[escada["destino"]]
         self.jogador.definir_posicao(escada["x"], escada["y"])
+        self.tutorial_aberto = False
 
     def _reiniciar(self):
         # recria os andares e reposiciona o jogador no centro do lobby com vida cheia.
@@ -115,6 +129,7 @@ class Aplicacao:
             self.imagens["respiracao_esquerda"],
         )
         self.opcao_game_over = 0
+        self.tutorial_aberto = False
 
     def _desenhar(self):
         # limpa a tela e desenha todas as camadas na ordem: mapa, jogador e interface (hud).
@@ -134,13 +149,118 @@ class Aplicacao:
         self._desenhar_nome()
         self._desenhar_vida()
         self._desenhar_mensagem_bau()
+        if not self.jogador.game_over:
+            if self._tutorial_visivel():
+                self._desenhar_tutorial()
+            else:
+                self._desenhar_ajuda()
+                self._desenhar_dica_bau()
         if self.jogador.game_over:
             self._desenhar_game_over()
         pygame.display.flip()
 
+    def _desenhar_ajuda(self):
+        if self.mundo.ident == "lobby":
+            texto = renderizar_texto(self.fonte_tutorial, "[H] Tutorial", (238, 215, 165))
+            fundo = texto.get_rect(topleft=(22, 58)).inflate(20, 12)
+            pygame.draw.rect(self.tela, (24, 23, 29), fundo)
+            pygame.draw.rect(self.tela, (111, 96, 65), fundo, 2)
+            self.tela.blit(texto, texto.get_rect(center=fundo.center))
+
+    def _desenhar_dica_bau(self):
+        if self.jogador.em_movimento:
+            return
+        pos_bau = obter_bau_proximo(self.mundo, self.jogador)
+        if pos_bau:
+            bx, by = pos_bau
+            if self.mundo.grade[by][bx] == BAU_FECHADO:
+                texto = renderizar_texto(self.fonte, "[F] Abrir baú", (255, 224, 148))
+                fundo = texto.get_rect(center=(LARGURA // 2, ALTURA - 82)).inflate(28, 16)
+                pygame.draw.rect(self.tela, (24, 23, 29), fundo)
+                pygame.draw.rect(self.tela, (155, 120, 66), fundo, 2)
+                self.tela.blit(texto, texto.get_rect(center=fundo.center))
+
+    def _desenhar_tutorial(self):
+        # Pausa a exploracao enquanto o jogador le as instrucoes da entrada.
+        camada = pygame.Surface((LARGURA, ALTURA), pygame.SRCALPHA)
+        camada.fill((7, 10, 16, 190))
+        self.tela.blit(camada, (0, 0))
+        painel = pygame.Rect(0, 0, 620, 592)
+        painel.center = (LARGURA // 2, ALTURA // 2)
+        # A moldura de pedra tambem e ampliada sem suavizacao, em pixels de 2x2.
+        pedra = pygame.Surface((painel.width // 2, painel.height // 2), pygame.SRCALPHA)
+        largura, altura = pedra.get_size()
+        contorno = (
+            (4, 0), (largura - 5, 0), (largura - 1, 4), (largura - 1, altura - 5),
+            (largura - 5, altura - 1), (4, altura - 1), (0, altura - 5), (0, 4),
+        )
+        pygame.draw.polygon(pedra, (30, 33, 35), contorno)
+        pygame.draw.polygon(pedra, (152, 126, 77), contorno, 2)
+        pygame.draw.rect(pedra, (76, 73, 58), (5, 5, largura - 10, altura - 10), 1)
+        for linha in range(12, altura - 12, 13):
+            for coluna in range(12, largura - 12, 19):
+                if (coluna + linha) % 3 == 0:
+                    pygame.draw.rect(pedra, (34, 37, 38), (coluna, linha, 2, 1))
+        self.tela.blit(pygame.transform.scale(pedra, painel.size), painel)
+        x, y = painel.x + 24, painel.y
+        rotulo = renderizar_texto(
+            self.fonte_tutorial_rotulo, "INSCRIÇÕES DAS RUÍNAS  /  TUTORIAL", (210, 169, 99)
+        )
+        self.tela.blit(rotulo, (x, y + 22))
+        titulo = renderizar_texto(self.fonte_tutorial_titulo, "Sabedoria das ruínas", (248, 238, 216))
+        self.tela.blit(titulo, (x, y + 44))
+        subtitulo = renderizar_texto(
+            self.fonte_tutorial, "Um guia para explorar a masmorra.", (184, 184, 167)
+        )
+        self.tela.blit(subtitulo, (x, y + 80))
+
+        instrucoes = (
+            ("WASD", "Movimente-se", (
+                "Use W, A, S, D ou as setas para andar.",
+            )),
+            ("VIDA", "Cuidado com os buracos", (
+                "Você tem 3 corações. Cair tira meio",
+                "coração e leva você a um ponto seguro.",
+            )),
+            ("DANO", "Observe o personagem", (
+                "Após sofrer dano, você para um instante.",
+                "Enquanto pisca, você fica protegido.",
+            )),
+            ("F", "Abra os baús", (
+                "Ao lado do baú, pressione F para abrir.",
+            )),
+            ("SAÍDA", "Avance pela masmorra", (
+                "Siga o caminho até o portão ao norte.",
+                "Chegue perto para abrir e subir.",
+            )),
+        )
+        for indice, (tecla, assunto, linhas) in enumerate(instrucoes):
+            topo = y + 112 + indice * 76
+            selo = pygame.Rect(x, topo + 4, 72, 32)
+            pygame.draw.rect(self.tela, (47, 48, 44), selo)
+            pygame.draw.rect(self.tela, (115, 103, 74), selo, 2)
+            texto_tecla = renderizar_texto(self.fonte_tutorial_rotulo, tecla, (239, 207, 145))
+            self.tela.blit(texto_tecla, texto_tecla.get_rect(center=selo.center))
+            destaque = renderizar_texto(self.fonte_tutorial_destaque, assunto, (240, 232, 214))
+            self.tela.blit(destaque, (x + 88, topo))
+            for numero, linha in enumerate(linhas):
+                texto = renderizar_texto(self.fonte_tutorial, linha, (198, 197, 178))
+                self.tela.blit(texto, (x + 88, topo + 28 + numero * 24))
+
+        pygame.draw.line(self.tela, (107, 96, 68), (x, y + 502), (painel.right - 24, y + 502), 2)
+        botao = pygame.Rect(x, y + 522, 280, 44)
+        pygame.draw.rect(self.tela, (211, 171, 103), botao)
+        pygame.draw.rect(self.tela, (248, 216, 151), botao, 2)
+        texto_botao = renderizar_texto(
+            self.fonte_tutorial_destaque, "ENTER  Voltar ao jogo", (27, 26, 29)
+        )
+        self.tela.blit(texto_botao, texto_botao.get_rect(center=botao.center))
+        atalho = renderizar_texto(self.fonte_tutorial, "[H] / [ESC] Fechar", (184, 184, 167))
+        self.tela.blit(atalho, atalho.get_rect(midright=(painel.right - 24, botao.centery)))
+
     def _desenhar_nome(self):
         # desenha uma etiqueta com o nome do andar atual no canto superior direito.
-        texto = self.fonte.render(self.mundo.nome, True, (255, 255, 255))
+        texto = renderizar_texto(self.fonte, self.mundo.nome, (238, 222, 182))
         fundo = texto.get_rect(topright=(LARGURA - 8, 8)).inflate(12, 8)
         pygame.draw.rect(self.tela, (0, 0, 0), fundo)
         self.tela.blit(texto, texto.get_rect(center=fundo.center))
@@ -183,7 +303,7 @@ class Aplicacao:
     def _desenhar_mensagem_bau(self):
         if not self.mensagem_bau:
             return
-        texto = self.fonte.render(self.mensagem_bau, True, (255, 255, 255))
+        texto = renderizar_texto(self.fonte, self.mensagem_bau, (238, 222, 182))
         fundo = texto.get_rect(center=(LARGURA // 2, ALTURA - 32)).inflate(12, 8)
         pygame.draw.rect(self.tela, (0, 0, 0), fundo)
         self.tela.blit(texto, texto.get_rect(center=fundo.center))
@@ -193,7 +313,7 @@ class Aplicacao:
         camada.fill((0, 0, 0, 185))
         self.tela.blit(camada, (0, 0))
 
-        titulo = self.fonte_titulo.render("GAME OVER", True, (220, 40, 60))
+        titulo = renderizar_texto(self.fonte_titulo, "GAME OVER", (220, 40, 60))
         retangulo_titulo = titulo.get_rect(center=(LARGURA // 2, ALTURA // 2 - 60))
         self.tela.blit(titulo, retangulo_titulo)
 
@@ -207,6 +327,6 @@ class Aplicacao:
                 cor = (180, 180, 180)
                 rotulo = texto_opcao
 
-            superficie = self.fonte_opcao.render(rotulo, True, cor)
+            superficie = renderizar_texto(self.fonte_opcao, rotulo, cor)
             retangulo = superficie.get_rect(center=(LARGURA // 2, ALTURA // 2 + 15 + indice * 44))
             self.tela.blit(superficie, retangulo)
