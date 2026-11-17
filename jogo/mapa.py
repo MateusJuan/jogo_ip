@@ -1,6 +1,6 @@
 import pygame
 
-from jogo.blocos import BAU_FECHADO, BURACOS, IMAGENS, SOLIDOS
+from jogo.blocos import BAU_FECHADO,BAU_ABERTO, BURACOS, IMAGENS, SOLIDOS
 from jogo.configuracoes import TAMANHO_CELULA, TAMANHO_MAPA
 
 
@@ -24,6 +24,8 @@ def desenhar_mapa(tela, mundo, imagens):
             tela.blit(imagens[nome_imagem], (x * TAMANHO_CELULA, y * TAMANHO_CELULA))
             if bloco == BAU_FECHADO:
                 _desenhar_bau(tela, x, y)
+            elif bloco == BAU_ABERTO:
+                _desenhar_bau_aberto(tela, x, y)
 
     # desenha as escadas por cima do piso nas posições cadastradas no mundo.
     for (x, y), escada in mundo.escadas.items():
@@ -124,6 +126,28 @@ def _desenhar_bau(tela, x, y):
         ((218, 177, 80), (27, 10, 3, 20)),
         ((243, 211, 114), (16, 18, 8, 8)),
         ((54, 39, 30), (19, 20, 2, 4)),
+    )
+    for cor, (dx, dy, largura, altura) in detalhes:
+        pygame.draw.rect(tela, cor, (px + dx, py + dy, largura, altura))
+
+#verificar se há algum baú perto
+def obter_bau_proximo(mundo, jogador):
+    jx, jy = jogador.grade_x, jogador.grade_y
+    for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)):
+        bx, by = jx + dx, jy + dy
+        if (bx, by) in mundo.baus:
+            return (bx, by)
+    return None
+
+def _desenhar_bau_aberto(tela, x, y):
+    px, py = x * TAMANHO_CELULA, y * TAMANHO_CELULA
+    detalhes = (
+        ((27, 25, 31), (4, 39, 32, 6)),
+        ((33, 24, 27), (4, 16, 32, 17)), #base do baú
+        ((20, 12, 15), (7, 17, 26, 5)), #interior escuro aberto
+        ((110, 57, 35), (7, 22, 26, 8)), #madeira frontal
+        ((218, 177, 80), (10, 20, 3, 10)), #ferragem esuerda
+        ((218, 177, 80), (27, 20, 3, 10)), #ferragem direita
     )
     for cor, (dx, dy, largura, altura) in detalhes:
         pygame.draw.rect(tela, cor, (px + dx, py + dy, largura, altura))

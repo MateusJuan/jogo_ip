@@ -7,6 +7,8 @@ from jogo.jogador import Jogador
 from jogo.mapa import atualizar_porta, desenhar_mapa
 from jogo.mundos import criar_mundos
 from jogo.recursos import carregar_imagens
+from jogo.blocos import BAU_ABERTO, BAU_FECHADO
+from jogo.mapa import atualizar_porta, desenhar_mapa, obter_bau_proximo
 
 
 class Aplicacao:
@@ -30,6 +32,8 @@ class Aplicacao:
             self.imagens["caminhada_frente"], self.imagens["respiracao_direita"]
         )
         self.rodando = True
+        self.mensagem_bau = ""
+        self.tempo_mensage = 0.0
         self.opcao_game_over = 0
         self.fonte_titulo = pygame.font.SysFont("arial", 52, bold=True)
         self.fonte_opcao = pygame.font.SysFont("arial", 28, bold=True)
@@ -47,6 +51,10 @@ class Aplicacao:
             else:
                 self._desenhar_game_over()
             self._desenhar()
+            if self.tempo_mensage > 0:
+                self.tempo_mensage -= dt
+                if self.tempo_mensage <= 0:
+                    self.mensagem_bau = ""
         pygame.quit()
 
     def _eventos(self):
@@ -63,7 +71,21 @@ class Aplicacao:
                         self._reiniciar()
                     else:
                         self.rodando = False
+            elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_f:
+                self._interagir_bau()
 
+    def _interagir_bau(self):
+        pos_bau = obter_bau_proximo(self.mundo, self.jogador)
+        if not pos_bau:
+            return
+        bx, by = pos_bau
+        #abre o baú
+        self.mundo.grade[by][bx] = BAU_ABERTO
+        itens = self.mundo.baus.get(pos_bau)
+        texto_itens = ", ".join(itens) if itens else "vazio"
+        self.mensagem_bau = f"Baú aberto! Você encontrou: {texto_itens}"
+        self.tempo_mensage = 4.0 #deixa visivle por 4 segundos
+    
     def _verificar_escada(self):
         # troca de andar caso o personagem tenha parado exatamente sobre uma célula de escada.
         if self.jogador.em_movimento:
@@ -85,6 +107,10 @@ class Aplicacao:
             TAMANHO_MAPA - 3,
             self.imagens["personagem"],
             self.imagens["personagem_costas"],
+            self.imagens["caminhada_direita"],
+            self.imagens["caminhada_esquerda"],
+            self.imagens["caminhada_frente"],
+            self.imagens["respiracao_direita"],
         )
         self.opcao_game_over = 0
 
@@ -105,6 +131,7 @@ class Aplicacao:
         )
         self._desenhar_nome()
         self._desenhar_vida()
+        self._desenhar_mensagem_bau()
         if self.jogador.game_over:
             self._desenhar_game_over()
         pygame.display.flip()
@@ -151,6 +178,13 @@ class Aplicacao:
                             (x + coluna * tamanho_pixel, 12 + linha * tamanho_pixel,
                              tamanho_pixel, tamanho_pixel),
                         )
+    def _desenhar_mensagem_bau(self):
+        if not self.mensagem_bau:
+            return
+        texto = self.fonte.render(self.mensagem_bau, True, (255, 255, 255))
+        fundo = texto.get_rect(center=(LARGURA // 2, ALTURA - 32)).inflate(12, 8)
+        pygame.draw.rect(self.tela, (0, 0, 0), fundo)
+        self.tela.blit(texto, texto.get_rect(center=fundo.center))
     def _desenhar_game_over(self):
         # cria uma camada escura semitransparente por cima do jogo e desenha o menu de derrota.
         camada = pygame.Surface((LARGURA, ALTURA), pygame.SRCALPHA)
