@@ -1,6 +1,6 @@
 import pygame
 
-from jogo.blocos import IMAGENS, SOLIDOS
+from jogo.blocos import IMAGENS, SOLIDOS, BURACOS
 from jogo.configuracoes import TAMANHO_CELULA, TAMANHO_MAPA
 
 
@@ -35,3 +35,8 @@ def _desenhar_escada(tela, x, y, sobe):
     else:
         ponta = [(px + 20, py + 34), (px + 14, py + 26), (px + 26, py + 26)]
         pygame.draw.polygon(tela, (28, 24, 20), ponta)
+
+def identificando_buraco(mundo, x, y):
+    if x < 0 or y < 0 or x >= TAMANHO_MAPA or y >= TAMANHO_MAPA:
+        return False
+    return mundo.grade[y][x] in BURACOS
