@@ -6,7 +6,10 @@ from jogo.mapa import identificando_buraco, pode_andar
 
 class Jogador:
     # representa o personagem controlado pelo jogador, sua posição, vida e cronômetros.
-    def __init__(self, grade_x, grade_y, imagem, imagem_costas, caminhada_direita, caminhada_esquerda, caminhada_frente, respiracao_direita):
+    def __init__(
+        self, grade_x, grade_y, imagem, imagem_costas, caminhada_direita,
+        caminhada_esquerda, caminhada_frente, respiracao_direita, respiracao_esquerda,
+    ):
         # posição lógica na matriz (0 a 16).
         self.grade_x = grade_x
         self.grade_y = grade_y
@@ -17,6 +20,7 @@ class Jogador:
         self.caminhada_esquerda = caminhada_esquerda
         self.tempo_animacao = 0.0
         self.respiracao_direita = respiracao_direita
+        self.respiracao_esquerda = respiracao_esquerda
         self.tempo_respiracao = 0.0
         self.direcao_olhar = (1, 0)
         # posição visual em pixels na tela (permite deslize suave entre células).
@@ -26,6 +30,8 @@ class Jogador:
         self.destino_x = grade_x
         self.destino_y = grade_y
         self.em_movimento = False
+        # Mantem a animacao no quadro em que o personagem termina um passo.
+        self.movendo_neste_quadro = False
         # sistema de vida (3 corações, permitindo frações de 0.5).
         self.vida_max = 3.0
         self.vida = 3.0
@@ -45,6 +51,9 @@ class Jogador:
         self.x = float(grade_x * TAMANHO_CELULA)
         self.y = float(grade_y * TAMANHO_CELULA)
         self.em_movimento = False
+        self.movendo_neste_quadro = False
+        self.tempo_animacao = 0.0
+        self.tempo_respiracao = 0.0
 
     def levar_dano(self, quantidade):
         # desconta vida caso o jogador não esteja invulnerável e ativa o tempo de proteção.
@@ -61,14 +70,7 @@ class Jogador:
 
     def atualizar(self, dt, teclas, mundo):
         # atualiza o deslize do personagem quadro a quadro usando 'dt' (tempo decorrido).
-        if self.em_movimento:
-            self.tempo_animacao += dt
-        else:
-            dx, dy = self._direcao(teclas)
-            if (dx != 0 or dy < 0) and self.tempo_parado <= 0:
-                self.tempo_animacao += dt
-            else:
-                self.tempo_animacao = 0.0
+        self.movendo_neste_quadro = False
         restante = dt
         # variável booleana de controle para encerrar o while sem usar 'break' ou 'continue'.
         continuar_loop = True
@@ -94,6 +96,7 @@ class Jogador:
                 if distancia == 0:
                     self._chegar(mundo)
                 else:
+                    self.movendo_neste_quadro = True
                     passo = VELOCIDADE * restante
                     if distancia <= passo:
                         # alcançou ou ultrapassou o centro da célula de destino neste quadro.
@@ -108,9 +111,11 @@ class Jogador:
                         self.y += diferenca_y * proporcao
                         restante = 0
 
-        if self.em_movimento:
+        if self.movendo_neste_quadro:
+            self.tempo_animacao += dt
             self.tempo_respiracao = 0.0
         else:
+            self.tempo_animacao = 0.0
             self.tempo_respiracao += dt
 
         # desconta o tempo dos cronômetros de invulnerabilidade e paralisação.
@@ -125,17 +130,21 @@ class Jogador:
         # desenha o personagem na tela, alternando a visibilidade para piscar quando invulnerável.
         if self.tempo_invulneravel <= 0 or int(self.tempo_invulneravel * 12) % 2 == 0:
             imagem = self.imagem
-            if not self.em_movimento and self.direcao_olhar == (1, 0):
-                quadros = self.respiracao_direita
-                imagem = quadros[int(self.tempo_respiracao * 8) % len(quadros)]
-            if self.em_movimento and self.destino_y < self.grade_y:
+            if self.movendo_neste_quadro and self.direcao_olhar == (0, -1):
                 quadros = self.caminhada_frente
                 imagem = quadros[int(self.tempo_animacao * 10) % len(quadros)]
-            elif self.em_movimento and self.destino_x != self.grade_x:
+            elif self.movendo_neste_quadro and self.direcao_olhar[0] != 0:
                 quadros = self.caminhada_direita
-                if self.destino_x < self.grade_x:
+                if self.direcao_olhar == (-1, 0):
                     quadros = self.caminhada_esquerda
                 imagem = quadros[int(self.tempo_animacao * 10) % len(quadros)]
+            elif self.direcao_olhar == (0, -1):
+                imagem = self.imagem_costas
+            elif self.direcao_olhar[0] != 0:
+                quadros = self.respiracao_direita
+                if self.direcao_olhar == (-1, 0):
+                    quadros = self.respiracao_esquerda
+                imagem = quadros[int(self.tempo_respiracao * 8) % len(quadros)]
             tela.blit(imagem, (round(self.x), round(self.y)))
 
     def _direcao(self, teclas):
