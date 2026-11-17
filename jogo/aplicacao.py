@@ -68,7 +68,7 @@ class Aplicacao:
         itens = self.mundo.baus.get[pos_bau]
         texto_itens = ", ".join(itens) if itens else "vazio"
         self.mensagem_bau = f"Baú aberto! Você encontrou: {texto_itens}"
-        sef.tempo_mensage = 4.0 #deixa visivle por 4 segundos
+        self.tempo_mensage = 4.0 #deixa visivle por 4 segundos
     
     def _verificar_escada(self):
         # troca de andar caso o personagem tenha parado exatamente sobre uma célula de escada.
