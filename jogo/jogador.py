@@ -1,142 +1,161 @@
 import pygame
 
 from jogo.configuracoes import TAMANHO_CELULA, VELOCIDADE
-from jogo.mapa import pode_andar, identificando_buraco
+from jogo.mapa import identificando_buraco, pode_andar
 
 
-class Jogador:
-    def __init__(self, grade_x, grade_y, imagem):
-        self.grade_x = grade_x
-        self.grade_y = grade_y
-        self.imagem = imagem
-        self.x = float(grade_x * TAMANHO_CELULA)
-        self.y = float(grade_y * TAMANHO_CELULA)
-        self.destino_x = grade_x
-        self.destino_y = grade_y
-        self.em_movimento = False
-        self.vida_max = 3.0
-        self.vida = 3.0
-        self.tempo_invulneravel = 0.0
-        self.tempo_parado = 0.0
-        self.passos_seguros = [(grade_x, grade_y)]
+def criar_jogador(grade_x, grade_y, imagem):
+    # cria o dicionário com todo o estado do personagem (posição, vida, tempos e histórico).
+    return {
+        # posição lógica na matriz (0 a 16).
+        "grade_x": grade_x,
+        "grade_y": grade_y,
+        "imagem": imagem,
+        # posição visual em pixels na tela (permite deslize suave entre células).
+        "x": float(grade_x * TAMANHO_CELULA),
+        "y": float(grade_y * TAMANHO_CELULA),
+        # célula para onde o personagem está caminhando no momento.
+        "destino_x": grade_x,
+        "destino_y": grade_y,
+        "em_movimento": False,
+        # sistema de vida (3 corações, permitindo frações de 0.5).
+        "vida_max": 3.0,
+        "vida": 3.0,
+        # cronômetros em segundos para piscar (invulnerável) e travar movimento (parado).
+        "tempo_invulneravel": 0.0,
+        "tempo_parado": 0.0,
+        # lista que guarda as últimas células seguras pisadas (para voltar antes da beirada).
+        "passos_seguros": [(grade_x, grade_y)],
+    }
 
-    def definir_posicao(self, grade_x, grade_y):
-        self.grade_x = grade_x
-        self.grade_y = grade_y
-        self.destino_x = grade_x
-        self.destino_y = grade_y
-        self.x = float(grade_x * TAMANHO_CELULA)
-        self.y = float(grade_y * TAMANHO_CELULA)
-        self.em_movimento = False
 
-    def levar_dano(self, quantidade):
-        if self.tempo_invulneravel <= 0.0:
-            self.vida = self.vida - quantidade
-            if self.vida <= 0:
-                self.vida = 0
-            else:
-                self.tempo_invulneravel = 1.2
-                self.tempo_parado = 0.5
+def definir_posicao_jogador(jogador, grade_x, grade_y):
+    # teletransporta o jogador imediatamente para a célula (grade_x, grade_y).
+    jogador["grade_x"] = grade_x
+    jogador["grade_y"] = grade_y
+    jogador["destino_x"] = grade_x
+    jogador["destino_y"] = grade_y
+    jogador["x"] = float(grade_x * TAMANHO_CELULA)
+    jogador["y"] = float(grade_y * TAMANHO_CELULA)
+    jogador["em_movimento"] = False
+
+
+def levar_dano(jogador, quantidade):
+    # desconta vida caso o jogador não esteja invulnerável e ativa o tempo de proteção.
+    if jogador["tempo_invulneravel"] <= 0.0:
+        jogador["vida"] = jogador["vida"] - quantidade
+        if jogador["vida"] <= 0:
+            jogador["vida"] = 0
         else:
-            return False
+            jogador["tempo_invulneravel"] = 1.2
+            jogador["tempo_parado"] = 0.5
+        return True
+    return False
 
-    def _desenhar_vida(self):
-        for i in range(3):
-            x = 12 + i * 32
-            y = 12
 
-            if self.jogador.vida >= i + 1:
-                pygame.draw.rect(self.tela, (220, 40, 60), (x, y, 24, 24))
-            elif self.jogador.vida >= i + 0.5:
-                pygame.draw.rect(self.tela, (60, 40, 45), (x, y, 24, 24))
-                pygame.draw.rect(self.tela, (220, 40, 60), (x, y, 12, 24))
-            else:
-                pygame.draw.rect(self.tela, (60, 40, 45), (x, y, 24, 24))
+def atualizar_jogador(jogador, dt, teclas, mundo):
+    # atualiza o deslize do personagem quadro a quadro usando 'dt' (tempo decorrido).
+    restante = dt
+    # variável booleana de controle para encerrar o while sem usar 'break' ou 'continue'.
+    continuar_loop = True
 
-    def atualizar(self, dt, teclas, mundo):
-        restante = dt
+    while restante > 0 and continuar_loop:
+        pode_mover = True
 
-        while restante > 0:
-            if not self.em_movimento:
-                dx, dy = self._direcao(teclas)
-                if not self._comecar_passo(dx, dy, mundo):
-                    break
+        # se estiver parado em uma célula, lê o teclado para iniciar o próximo passo.
+        if not jogador["em_movimento"]:
+            dx, dy = _direcao(teclas)
+            if not _comecar_passo(jogador, dx, dy, mundo):
+                continuar_loop = False
+                pode_mover = False
 
-            alvo_x = self.destino_x * TAMANHO_CELULA
-            alvo_y = self.destino_y * TAMANHO_CELULA
-            diferenca_x = alvo_x - self.x
-            diferenca_y = alvo_y - self.y
+        # se houver um passo ativo, desloca os pixels na direção da célula de destino.
+        if pode_mover:
+            alvo_x = jogador["destino_x"] * TAMANHO_CELULA
+            alvo_y = jogador["destino_y"] * TAMANHO_CELULA
+            diferenca_x = alvo_x - jogador["x"]
+            diferenca_y = alvo_y - jogador["y"]
             distancia = (diferenca_x ** 2 + diferenca_y ** 2) ** 0.5
 
             if distancia == 0:
-                self._chegar(mundo)
-                continue
-
-            passo = VELOCIDADE * restante
-            if distancia <= passo:
-                self.x = float(alvo_x)
-                self.y = float(alvo_y)
-                self._chegar(mundo)
-                restante -= distancia / VELOCIDADE
+                _chegar(jogador, mundo)
             else:
-                proporcao = passo / distancia
-                self.x += diferenca_x * proporcao
-                self.y += diferenca_y * proporcao
-                restante = 0
+                passo = VELOCIDADE * restante
+                if distancia <= passo:
+                    # alcançou ou ultrapassou o centro da célula de destino neste quadro.
+                    jogador["x"] = float(alvo_x)
+                    jogador["y"] = float(alvo_y)
+                    _chegar(jogador, mundo)
+                    restante -= distancia / VELOCIDADE
+                else:
+                    # ainda está no meio do caminho: avança proporcionalmente.
+                    proporcao = passo / distancia
+                    jogador["x"] += diferenca_x * proporcao
+                    jogador["y"] += diferenca_y * proporcao
+                    restante = 0
 
-        self.tempo_invulneravel -= dt/1.5
-        self.tempo_parado -= dt
-        if self.tempo_invulneravel < 0:
-            self.tempo_invulneravel = 0.0
-        if self.tempo_parado < 0:
-            self.tempo_parado = 0.0
+    # desconta o tempo dos cronômetros de invulnerabilidade e paralisação.
+    jogador["tempo_invulneravel"] -= dt / 1.5
+    jogador["tempo_parado"] -= dt
+    if jogador["tempo_invulneravel"] < 0:
+        jogador["tempo_invulneravel"] = 0.0
+    if jogador["tempo_parado"] < 0:
+        jogador["tempo_parado"] = 0.0
 
-    def desenhar(self, tela):
-        tela.blit(self.imagem, (round(self.x), round(self.y)))
-        if self.tempo_invulneravel <= 0 or int(self.tempo_invulneravel * 12) % 2 == 0:
-            tela.blit(self.imagem, (round(self.x), round(self.y)))
 
-    def _direcao(self, teclas):
-        if teclas[pygame.K_w] or teclas[pygame.K_UP]:
-            return 0, -1
-        if teclas[pygame.K_s] or teclas[pygame.K_DOWN]:
-            return 0, 1
-        if teclas[pygame.K_a] or teclas[pygame.K_LEFT]:
-            return -1, 0
-        if teclas[pygame.K_d] or teclas[pygame.K_RIGHT]:
-            return 1, 0
-        return 0, 0
+def desenhar_jogador(jogador, tela):
+    # desenha o personagem na tela, alternando a visibilidade para piscar quando invulnerável.
+    if jogador["tempo_invulneravel"] <= 0 or int(jogador["tempo_invulneravel"] * 12) % 2 == 0:
+        tela.blit(jogador["imagem"], (round(jogador["x"]), round(jogador["y"])))
 
-    def _comecar_passo(self, dx, dy, mundo):
-        if dx == 0 and dy == 0:
-            return False
 
-        proximo_x = self.grade_x + dx
-        proximo_y = self.grade_y + dy
-        if not pode_andar(mundo, proximo_x, proximo_y):
-            return False
+def _direcao(teclas):
+    # converte as teclas wasd ou setas direcionais em deslocamento (dx, dy) na grade.
+    if teclas[pygame.K_w] or teclas[pygame.K_UP]:
+        return 0, -1
+    if teclas[pygame.K_s] or teclas[pygame.K_DOWN]:
+        return 0, 1
+    if teclas[pygame.K_a] or teclas[pygame.K_LEFT]:
+        return -1, 0
+    if teclas[pygame.K_d] or teclas[pygame.K_RIGHT]:
+        return 1, 0
+    return 0, 0
 
-        if self.tempo_parado > 0:
-            return False
 
-        self.destino_x = proximo_x
-        self.destino_y = proximo_y
-        self.em_movimento = True
-        return True
+def _comecar_passo(jogador, dx, dy, mundo):
+    # inicia o movimento para a célula vizinha se ela for caminhável e o jogador não estiver travado.
+    if dx == 0 and dy == 0:
+        return False
 
-    def _chegar(self, mundo):
-        if identificando_buraco(mundo, self.destino_x, self.destino_y) == False:
-            self.grade_x = self.destino_x
-            self.grade_y = self.destino_y
-            self.passos_seguros.append((self.grade_x, self.grade_y))
-            self.em_movimento = False
+    proximo_x = jogador["grade_x"] + dx
+    proximo_y = jogador["grade_y"] + dy
+    if not pode_andar(mundo, proximo_x, proximo_y):
+        return False
+    if jogador["tempo_parado"] > 0:
+        return False
+
+    jogador["destino_x"] = proximo_x
+    jogador["destino_y"] = proximo_y
+    jogador["em_movimento"] = True
+    return True
+
+
+def _chegar(jogador, mundo):
+    # executa quando o jogador termina de deslizar até a célula de destino.
+    if not identificando_buraco(mundo, jogador["destino_x"], jogador["destino_y"]):
+        # chão firme: atualiza a posição atual e registra no histórico de passos seguros.
+        jogador["grade_x"] = jogador["destino_x"]
+        jogador["grade_y"] = jogador["destino_y"]
+        jogador["passos_seguros"].append((jogador["grade_x"], jogador["grade_y"]))
+        jogador["em_movimento"] = False
+    else:
+        # caiu em buraco: aplica dano, congela por 1s e volta para antes da beirada (-2).
+        levar_dano(jogador, 0.5)
+        if len(jogador["passos_seguros"]) >= 2:
+            destino_seguro = jogador["passos_seguros"][-2]
         else:
-            self.levar_dano(0.5)
-            if len(self.passos_seguros) >= 2:
-                destino_seguro = self.passos_seguros[-2]
-            else:
-                destino_seguro = self.passos_seguros[0]
-            self.definir_posicao(*destino_seguro)
-            self.passos_seguros = [destino_seguro]
-            self.tempo_parado = 1.0
-            self.em_movimento = False
+            destino_seguro = jogador["passos_seguros"][0]
+        definir_posicao_jogador(jogador, destino_seguro[0], destino_seguro[1])
+        jogador["passos_seguros"] = [destino_seguro]
+        jogador["tempo_parado"] = 1.0
+        jogador["em_movimento"] = False

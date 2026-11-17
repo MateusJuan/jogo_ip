@@ -15,32 +15,37 @@ from jogo.blocos import (
 from jogo.configuracoes import TAMANHO_MAPA
 
 
-class Mundo:
-    def __init__(self, ident, nome, grade, escadas):
-        self.ident = ident
-        self.nome = nome
-        self.grade = grade
-        self.escadas = escadas
+def criar_mundo(ident, nome, grade, escadas):
+    # cria o dicionário que representa um andar do castelo (substitui a classe Mundo).
+    return {
+        "ident": ident,
+        "nome": nome,
+        "grade": grade,
+        "escadas": escadas,
+    }
 
 
 def criar_mundos():
+    # monta todos os 4 andares e retorna um dicionário indexado pelo identificador.
     lobby = _criar_lobby()
     salao = _criar_salao()
     galeria = _criar_galeria()
     torre = _criar_torre()
     return {
-        lobby.ident: lobby,
-        salao.ident: salao,
-        galeria.ident: galeria,
-        torre.ident: torre,
+        lobby["ident"]: lobby,
+        salao["ident"]: salao,
+        galeria["ident"]: galeria,
+        torre["ident"]: torre,
     }
 
 
 def _grade(bloco):
+    # gera uma matriz 17x17 totalmente preenchida com um mesmo tipo de bloco.
     return [[bloco for _ in range(TAMANHO_MAPA)] for _ in range(TAMANHO_MAPA)]
 
 
 def _borda(grade, bloco):
+    # preenche as 4 bordas externas da matriz com paredes ou muros.
     ultima = TAMANHO_MAPA - 1
     for i in range(TAMANHO_MAPA):
         grade[0][i] = bloco
@@ -50,12 +55,14 @@ def _borda(grade, bloco):
 
 
 def _preencher(grade, x0, y0, x1, y1, bloco):
+    # preenche um retângulo de blocos na matriz, de (x0, y0) até (x1, y1).
     for y in range(y0, y1 + 1):
         for x in range(x0, x1 + 1):
             grade[y][x] = bloco
 
 
 def _celulas_portao(lado):
+    # retorna as 3 coordenadas centrais da parede norte (y=0) ou sul (y=16) para a escada.
     centro = TAMANHO_MAPA // 2 - 1
     ultima = TAMANHO_MAPA - 1
     if lado == "norte":
@@ -64,20 +71,23 @@ def _celulas_portao(lado):
 
 
 def _escada(lado, destino, x, y, sobe):
-    return {
-        celula: {"destino": destino, "x": x, "y": y, "sobe": sobe}
-        for celula in _celulas_portao(lado)
-    }
+    # mapeia as 3 células da escada para o andar de destino e a posição onde o jogador nasce.
+    resultado = {}
+    for celula in _celulas_portao(lado):
+        resultado[celula] = {"destino": destino, "x": x, "y": y, "sobe": sobe}
+    return resultado
 
 
 def _criar_lobby():
+    # andar 0 (lobby): pátio aberto com escada ao norte levando para o salão.
     grade = _grade(GRAMA)
     _borda(grade, MURO)
     escadas = _escada("norte", "salao", 8, 15, True)
-    return Mundo("lobby", "Lobby", grade, escadas)
+    return criar_mundo("lobby", "Lobby", grade, escadas)
 
 
 def _criar_salao():
+    # andar 1 (salão): sala interna com 4 blocos de entulho e escadas ao sul e ao norte.
     grade = _grade(SALAO_CHAO)
     _borda(grade, SALAO_PAREDE)
     _preencher(grade, 2, 4, 5, 8, SALAO_ENTULHO)
@@ -87,10 +97,11 @@ def _criar_salao():
     escadas = {}
     escadas.update(_escada("sul", "lobby", 8, 1, False))
     escadas.update(_escada("norte", "galeria", 8, 15, True))
-    return Mundo("salao", "Andar 1 · Salão", grade, escadas)
+    return criar_mundo("salao", "Andar 1 - Salão", grade, escadas)
 
 
 def _criar_galeria():
+    # andar 2 (galeria): sala cheia de buracos com um caminho estreito em 's' até o norte.
     grade = _grade(GALERIA_BURACO)
     _preencher(grade, 7, 10, 9, 15, GALERIA_CHAO)
     _preencher(grade, 3, 10, 9, 11, GALERIA_CHAO)
@@ -101,14 +112,15 @@ def _criar_galeria():
     escadas = {}
     escadas.update(_escada("sul", "salao", 8, 1, False))
     escadas.update(_escada("norte", "torre", 8, 15, True))
-    return Mundo("galeria", "Andar 2 · Galeria", grade, escadas)
+    return criar_mundo("galeria", "Andar 2 - Galeria", grade, escadas)
 
 
 def _criar_torre():
+    # andar 3 (torre): topo do castelo com 6 pilares, altar ao norte e escada de volta.
     grade = _grade(TORRE_CHAO)
     _borda(grade, TORRE_PAREDE)
     _preencher(grade, 7, 2, 9, 3, TORRE_ALTAR)
     for x, y in ((3, 4), (13, 4), (3, 9), (13, 9), (4, 13), (12, 13)):
         grade[y][x] = TORRE_PILAR
     escadas = _escada("sul", "galeria", 8, 1, False)
-    return Mundo("torre", "Andar 3 · Torre", grade, escadas)
+    return criar_mundo("torre", "Andar 3 - Torre", grade, escadas)

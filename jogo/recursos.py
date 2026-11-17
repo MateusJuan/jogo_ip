@@ -4,12 +4,15 @@ from jogo.configuracoes import PASTA_ASSETS, TAMANHO_CELULA
 
 
 def _carregar(nome, com_alpha=False):
-    imagem = pygame.image.load(PASTA_ASSETS / nome)
+    # carrega uma imagem da pasta assets e redimensiona para o tamanho da célula (40x40).
+    imagem = pygame.image.load(PASTA_ASSETS + "/" + nome)
+    # o convert_alpha() preserva o fundo transparente (usado no sprite do personagem).
     imagem = imagem.convert_alpha() if com_alpha else imagem.convert()
     return pygame.transform.scale(imagem, (TAMANHO_CELULA, TAMANHO_CELULA))
 
 
 def carregar_imagens():
+    # carrega todas as texturas do jogo uma única vez e guarda em um dicionário.
     return {
         "grama": _carregar("grama.png"),
         "muro": _carregar("muro.png"),
