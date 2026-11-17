@@ -6,11 +6,12 @@ from jogo.mapa import identificando_buraco, pode_andar
 
 class Jogador:
     # representa o personagem controlado pelo jogador, sua posição, vida e cronômetros.
-    def __init__(self, grade_x, grade_y, imagem):
+    def __init__(self, grade_x, grade_y, imagem, imagem_costas):
         # posição lógica na matriz (0 a 16).
         self.grade_x = grade_x
         self.grade_y = grade_y
         self.imagem = imagem
+        self.imagem_costas = imagem_costas
         # posição visual em pixels na tela (permite deslize suave entre células).
         self.x = float(grade_x * TAMANHO_CELULA)
         self.y = float(grade_y * TAMANHO_CELULA)
@@ -101,7 +102,10 @@ class Jogador:
     def desenhar(self, tela):
         # desenha o personagem na tela, alternando a visibilidade para piscar quando invulnerável.
         if self.tempo_invulneravel <= 0 or int(self.tempo_invulneravel * 12) % 2 == 0:
-            tela.blit(self.imagem, (round(self.x), round(self.y)))
+            imagem = self.imagem
+            if self.em_movimento and self.destino_y < self.grade_y:
+                imagem = self.imagem_costas
+            tela.blit(imagem, (round(self.x), round(self.y)))
 
     def _direcao(self, teclas):
         # converte as teclas wasd ou setas direcionais em deslocamento (dx, dy) na grade.

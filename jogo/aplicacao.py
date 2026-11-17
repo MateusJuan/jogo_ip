@@ -1,6 +1,8 @@
 import pygame
 
-from jogo.configuracoes import ALTURA, FPS, LARGURA, TAMANHO_MAPA, TITULO
+from jogo.configuracoes import (
+    ALTURA, FPS, LARGURA, TAMANHO_CELULA, TAMANHO_MAPA, TITULO, ZOOM_CAMERA,
+)
 from jogo.jogador import Jogador
 from jogo.mapa import desenhar_mapa
 from jogo.mundos import criar_mundos
@@ -12,6 +14,9 @@ class Aplicacao:
     def __init__(self):
         pygame.init()
         self.tela = pygame.display.set_mode((LARGURA, ALTURA))
+        tamanho_mundo = TAMANHO_MAPA * TAMANHO_CELULA
+        self.cena = pygame.Surface((tamanho_mundo, tamanho_mundo)).convert()
+        self.camera = pygame.Rect(0, 0, LARGURA // ZOOM_CAMERA, ALTURA // ZOOM_CAMERA)
         pygame.display.set_caption(TITULO)
         self.clock = pygame.time.Clock()
         self.fonte = pygame.font.SysFont("arial", 20)
@@ -19,7 +24,9 @@ class Aplicacao:
         self.mundos = criar_mundos()
         self.mundo = self.mundos["lobby"]
         centro = TAMANHO_MAPA // 2
-        self.jogador = Jogador(centro, centro, self.imagens["personagem"])
+        self.jogador = Jogador(
+            centro, centro, self.imagens["personagem"], self.imagens["personagem_costas"]
+        )
         self.rodando = True
 
     def executar(self):
@@ -52,9 +59,19 @@ class Aplicacao:
 
     def _desenhar(self):
         # limpa a tela e desenha todas as camadas na ordem: mapa, jogador e interface (hud).
-        self.tela.fill((0, 0, 0))
-        desenhar_mapa(self.tela, self.mundo, self.imagens)
-        self.jogador.desenhar(self.tela)
+        self.cena.fill((0, 0, 0))
+        desenhar_mapa(self.cena, self.mundo, self.imagens)
+        self.jogador.desenhar(self.cena)
+
+        # acompanha o centro do personagem e limita a camera nas bordas do mapa.
+        self.camera.center = (
+            round(self.jogador.x + TAMANHO_CELULA / 2),
+            round(self.jogador.y + TAMANHO_CELULA / 2),
+        )
+        self.camera.clamp_ip(self.cena.get_rect())
+        pygame.transform.scale(
+            self.cena.subsurface(self.camera), self.tela.get_size(), self.tela
+        )
         self._desenhar_nome()
         self._desenhar_vida()
         pygame.display.flip()

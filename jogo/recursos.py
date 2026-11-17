@@ -27,4 +27,5 @@ def carregar_imagens():
         "torre_parede": _carregar("torre_parede.png"),
         "torre_altar": _carregar("torre_altar.png"),
         "personagem": _carregar("personagem.png", com_alpha=True),
+        "personagem_costas": _carregar("personagem_costas.png", com_alpha=True),
     }

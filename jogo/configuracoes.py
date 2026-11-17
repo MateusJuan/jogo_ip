@@ -11,6 +11,9 @@ ALTURA = TAMANHO_MAPA * TAMANHO_CELULA
 # taxa de atualização da tela (quadros por segundo).
 FPS = 60
 
+# aproxima a camera: cada pixel do mundo ocupa dois pixels na janela.
+ZOOM_CAMERA = 1.5
+
 # velocidade do personagem em pixels por segundo.
 # como cada célula tem 40 px, 270 px/s faz ele atravessar uma casa em ~0,15 s,
 # criando um deslize suave entre uma célula e outra.
