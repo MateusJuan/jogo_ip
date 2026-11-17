@@ -1,19 +1,20 @@
-from pathlib import Path
+# caminho da pasta onde ficam as imagens (.png) do jogo.
+PASTA_ASSETS = "assets"
 
-RAIZ = Path(__file__).resolve().parent.parent
-PASTA_ASSETS = RAIZ / "assets"
-
+# dimensões da grade e da janela:
+# cada célula tem 40x40 pixels e o mapa é uma matriz 17x17 (680x680 pixels).
 TAMANHO_CELULA = 40
 TAMANHO_MAPA = 17
-
 LARGURA = TAMANHO_MAPA * TAMANHO_CELULA
 ALTURA = TAMANHO_MAPA * TAMANHO_CELULA
 
+# taxa de atualização da tela (quadros por segundo).
 FPS = 60
 
-# Pixels por segundo. Cada célula tem 40 px,
-# então 270 deixa o ritmo perto do movimento antigo (uma célula a cada ~150 ms),
-# só que o sprite desliza em vez de teletransportar.
+# velocidade do personagem em pixels por segundo.
+# como cada célula tem 40 px, 270 px/s faz ele atravessar uma casa em ~0,15 s,
+# criando um deslize suave entre uma célula e outra.
 VELOCIDADE = 270
 
+# título exibido na barra superior da janela.
 TITULO = "Lost Ruins: Hords of Dooms"

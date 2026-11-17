@@ -1,3 +1,4 @@
+# códigos numéricos que representam cada tipo de terreno nas matrizes dos mapas.
 GRAMA = 0
 MURO = 1
 SALAO_CHAO = 2
@@ -11,11 +12,13 @@ TORRE_PILAR = 9
 TORRE_PAREDE = 10
 TORRE_ALTAR = 11
 
-BURACOS = {
+# lista de blocos que fazem o personagem cair e perder vida (usamos lista no lugar de set).
+BURACOS = [
     GALERIA_BURACO,
-}
+]
 
-SOLIDOS = {
+# lista de blocos que bloqueiam a passagem do personagem (paredes e obstáculos).
+SOLIDOS = [
     MURO,
     SALAO_ENTULHO,
     SALAO_PAREDE,
@@ -23,8 +26,9 @@ SOLIDOS = {
     TORRE_PILAR,
     TORRE_PAREDE,
     TORRE_ALTAR,
-}
+]
 
+# dicionário que liga o número do bloco na matriz ao nome da imagem carregada em recursos.py.
 IMAGENS = {
     GRAMA: "grama",
     MURO: "muro",
