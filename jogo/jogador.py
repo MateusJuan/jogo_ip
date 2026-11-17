@@ -8,14 +8,15 @@ class Jogador:
     # representa o personagem controlado pelo jogador, sua posição, vida e cronômetros.
     def __init__(
         self, grade_x, grade_y, imagem, imagem_costas, caminhada_direita,
-        caminhada_esquerda, caminhada_frente, respiracao_direita, respiracao_esquerda,
+        caminhada_esquerda, caminhada_costas, respiracao_direita, respiracao_esquerda,
     ):
         # posição lógica na matriz (0 a 16).
         self.grade_x = grade_x
         self.grade_y = grade_y
         self.imagem = imagem
+        self.imagem_esquerda = pygame.transform.flip(imagem, True, False)
         self.imagem_costas = imagem_costas
-        self.caminhada_frente = caminhada_frente
+        self.caminhada_costas = caminhada_costas
         self.caminhada_direita = caminhada_direita
         self.caminhada_esquerda = caminhada_esquerda
         self.tempo_animacao = 0.0
@@ -23,6 +24,8 @@ class Jogador:
         self.respiracao_esquerda = respiracao_esquerda
         self.tempo_respiracao = 0.0
         self.direcao_olhar = (1, 0)
+        # Lembra o lado do personagem tambem durante deslocamentos verticais.
+        self.direcao_lateral = 1
         # posição visual em pixels na tela (permite deslize suave entre células).
         self.x = float(grade_x * TAMANHO_CELULA)
         self.y = float(grade_y * TAMANHO_CELULA)
@@ -129,9 +132,9 @@ class Jogador:
     def desenhar(self, tela):
         # desenha o personagem na tela, alternando a visibilidade para piscar quando invulnerável.
         if self.tempo_invulneravel <= 0 or int(self.tempo_invulneravel * 12) % 2 == 0:
-            imagem = self.imagem
+            imagem = self.imagem if self.direcao_lateral == 1 else self.imagem_esquerda
             if self.movendo_neste_quadro and self.direcao_olhar == (0, -1):
-                quadros = self.caminhada_frente
+                quadros = self.caminhada_costas
                 imagem = quadros[int(self.tempo_animacao * 10) % len(quadros)]
             elif self.movendo_neste_quadro and self.direcao_olhar[0] != 0:
                 quadros = self.caminhada_direita
@@ -140,9 +143,9 @@ class Jogador:
                 imagem = quadros[int(self.tempo_animacao * 10) % len(quadros)]
             elif self.direcao_olhar == (0, -1):
                 imagem = self.imagem_costas
-            elif self.direcao_olhar[0] != 0:
+            elif not self.movendo_neste_quadro:
                 quadros = self.respiracao_direita
-                if self.direcao_olhar == (-1, 0):
+                if self.direcao_lateral == -1:
                     quadros = self.respiracao_esquerda
                 imagem = quadros[int(self.tempo_respiracao * 8) % len(quadros)]
             tela.blit(imagem, (round(self.x), round(self.y)))
@@ -163,15 +166,23 @@ class Jogador:
         # inicia o movimento para a célula vizinha se ela for caminhável e o jogador não estiver travado.
         if dx == 0 and dy == 0:
             return False
+        if self.tempo_parado > 0:
+            return False
+
+        # Vira mesmo diante de uma parede e mantem esse lado quando para.
+        if self.direcao_olhar != (dx, dy):
+            self.tempo_animacao = 0.0
+            self.tempo_respiracao = 0.0
+        self.direcao_olhar = (dx, dy)
+        if dx != 0:
+            self.direcao_lateral = dx
 
         proximo_x = self.grade_x + dx
         proximo_y = self.grade_y + dy
         if not pode_andar(mundo, proximo_x, proximo_y):
-            return False
-        if self.tempo_parado > 0:
+            self.movendo_neste_quadro = False
             return False
 
-        self.direcao_olhar = (dx, dy)
         self.destino_x = proximo_x
         self.destino_y = proximo_y
         self.em_movimento = True

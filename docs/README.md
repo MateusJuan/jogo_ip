@@ -16,6 +16,7 @@ Jogo de exploração de masmorra (*dungeon crawler*) desenvolvido para a discipl
 * **Textos e interface:** Fonte Cinzel com aparência de inscrições antigas, renderizada sem suavização e ampliada em pixels de `2x2`. O tutorial usa uma moldura de pedra pixelada. A fonte e sua licença estão incluídas em `assets/fontes/`.
 * **Baús (`F`):** Fique ao lado de um baú fechado para ver a dica de interação e pressione `F` para abri-lo.
 * **Animações do personagem:** Corrida lateral com os 10 quadros de `personagem_corrida_x.png` e respiração com os 16 quadros de `New Piskel.png`, enviados por SrFaisca. As sequências são espelhadas para a esquerda, e o personagem mantém a direção ao parar. A subida usa a sequência de costas existente.
+* **Animações do personagem:** Corrida lateral com os 10 quadros de `corrida_direita.png` e respiração com os 16 quadros de `respiracao_direita.png`, enviados por SrFaisca. As sequências são espelhadas para a esquerda. Ao parar, o personagem respira virado para o último lado escolhido, inclusive após descer ou virar junto a uma parede. A subida usa `caminhada_costas.png`, e a parada nessa direção mantém a pose de costas.
 * **Transição de Andares:** Pisar nas escadas ao norte (sobe) ou ao sul (desce) transporta o personagem para o próximo mapa.
 * **Sistema de Vida (HUD):** Barra superior esquerda com **3 corações** (suportando dano de `0.5` coração).
 * **Invulnerabilidade e Hitstun:** Ao sofrer dano, o personagem pisca enquanto está invulnerável e fica momentaneamente paralisado pelo impacto.
@@ -36,6 +37,7 @@ Todo o código segue estritamente as permissões das listas de Introdução à P
 | `GUIA_GIT.md` | Comandos essenciais de Git para a equipe trabalhar em branches separadas. |
 | `requirements.txt` | Dependência externa do projeto (`pygame`). |
 | `assets/` | Texturas `.png` dos pisos, paredes, obstáculos e personagem. |
+| `assets/movimento_jogador/` | Animações `corrida_direita.png`, `respiracao_direita.png` e `caminhada_costas.png`; poses estáticas `parado_direita.png` e `parado_costas.png`. As versões para a esquerda são geradas pelo jogo. |
 | `jogo/aplicacao.py` | Janela, relógio (`FPS`), loop principal, troca de andares e desenho do HUD. |
 | `jogo/configuracoes.py` | Dimensões da tela e da matriz (`17x17`), velocidade, FPS e caminho dos assets. |
 | `jogo/blocos.py` | Códigos numéricos dos terrenos, listas de obstáculos/buracos e mapa de imagens. |

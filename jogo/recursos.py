@@ -19,7 +19,7 @@ def _carregar_caminhada(nome):
              for i in range(4)]
     # Ignora pixels quase transparentes nas margens da imagem gerada.
     limites = [pose.get_bounding_rect(min_alpha=128) for pose in poses]
-    referencia = _carregar("movimento_jogador/personagem.png", com_alpha=True).get_bounding_rect()
+    referencia = _carregar("movimento_jogador/parado_direita.png", com_alpha=True).get_bounding_rect()
     escala = referencia.height / max(area.height for area in limites)
     quadros = []
     for pose, area in zip(poses, limites):
@@ -34,9 +34,9 @@ def _carregar_caminhada(nome):
 
 
 def _carregar_costas():
-    imagem = pygame.image.load(PASTA_ASSETS + "/movimento_jogador/personagem_costas.png").convert_alpha()
+    imagem = pygame.image.load(PASTA_ASSETS + "/movimento_jogador/parado_costas.png").convert_alpha()
     area = imagem.get_bounding_rect(min_alpha=128)
-    referencia = _carregar("movimento_jogador/personagem.png", com_alpha=True).get_bounding_rect()
+    referencia = _carregar("movimento_jogador/parado_direita.png", com_alpha=True).get_bounding_rect()
     tamanho = (round(area.width * referencia.height / area.height), referencia.height)
     quadro = pygame.Surface((TAMANHO_CELULA, TAMANHO_CELULA), pygame.SRCALPHA)
     quadro.blit(pygame.transform.scale(imagem.subsurface(area), tamanho),
@@ -61,15 +61,17 @@ def _carregar_animacao_piskel(nome, colunas, linhas):
 
 def carregar_imagens():
     # carrega todas as texturas do jogo uma única vez e guarda em um dicionário.
-    respiracao_direita = _carregar_animacao_piskel("New Piskel.png", 4, 4)
+    respiracao_direita = _carregar_animacao_piskel(
+        "movimento_jogador/respiracao_direita.png", 4, 4
+    )
     caminhada_direita = _carregar_animacao_piskel(
-        "movimento_jogador/personagem_corrida_x.png", 3, 4
+        "movimento_jogador/corrida_direita.png", 3, 4
     )
     return {
         "respiracao_direita": respiracao_direita,
         "respiracao_esquerda": [pygame.transform.flip(quadro, True, False)
                                for quadro in respiracao_direita],
-        "caminhada_frente": _carregar_caminhada("movimento_jogador/personagem_andando_frente.png"),
+        "caminhada_costas": _carregar_caminhada("movimento_jogador/caminhada_costas.png"),
         "caminhada_direita": caminhada_direita,
         "caminhada_esquerda": [pygame.transform.flip(quadro, True, False)
                               for quadro in caminhada_direita],
@@ -85,6 +87,6 @@ def carregar_imagens():
         "torre_pilar": _carregar("torre_pilar.png"),
         "torre_parede": _carregar("torre_parede.png"),
         "torre_altar": _carregar("torre_altar.png"),
-        "personagem": _carregar("movimento_jogador/personagem.png", com_alpha=True),
+        "personagem": _carregar("movimento_jogador/parado_direita.png", com_alpha=True),
         "personagem_costas": _carregar_costas(),
     }
