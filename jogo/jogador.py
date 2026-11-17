@@ -6,12 +6,19 @@ from jogo.mapa import identificando_buraco, pode_andar
 
 class Jogador:
     # representa o personagem controlado pelo jogador, sua posição, vida e cronômetros.
-    def __init__(self, grade_x, grade_y, imagem, imagem_costas):
+    def __init__(self, grade_x, grade_y, imagem, imagem_costas, caminhada_direita, caminhada_esquerda, caminhada_frente, respiracao_direita):
         # posição lógica na matriz (0 a 16).
         self.grade_x = grade_x
         self.grade_y = grade_y
         self.imagem = imagem
         self.imagem_costas = imagem_costas
+        self.caminhada_frente = caminhada_frente
+        self.caminhada_direita = caminhada_direita
+        self.caminhada_esquerda = caminhada_esquerda
+        self.tempo_animacao = 0.0
+        self.respiracao_direita = respiracao_direita
+        self.tempo_respiracao = 0.0
+        self.direcao_olhar = (1, 0)
         # posição visual em pixels na tela (permite deslize suave entre células).
         self.x = float(grade_x * TAMANHO_CELULA)
         self.y = float(grade_y * TAMANHO_CELULA)
@@ -54,6 +61,14 @@ class Jogador:
 
     def atualizar(self, dt, teclas, mundo):
         # atualiza o deslize do personagem quadro a quadro usando 'dt' (tempo decorrido).
+        if self.em_movimento:
+            self.tempo_animacao += dt
+        else:
+            dx, dy = self._direcao(teclas)
+            if (dx != 0 or dy < 0) and self.tempo_parado <= 0:
+                self.tempo_animacao += dt
+            else:
+                self.tempo_animacao = 0.0
         restante = dt
         # variável booleana de controle para encerrar o while sem usar 'break' ou 'continue'.
         continuar_loop = True
@@ -93,6 +108,11 @@ class Jogador:
                         self.y += diferenca_y * proporcao
                         restante = 0
 
+        if self.em_movimento:
+            self.tempo_respiracao = 0.0
+        else:
+            self.tempo_respiracao += dt
+
         # desconta o tempo dos cronômetros de invulnerabilidade e paralisação.
         self.tempo_invulneravel -= dt / 1.5
         self.tempo_parado -= dt / 1.5
@@ -105,8 +125,17 @@ class Jogador:
         # desenha o personagem na tela, alternando a visibilidade para piscar quando invulnerável.
         if self.tempo_invulneravel <= 0 or int(self.tempo_invulneravel * 12) % 2 == 0:
             imagem = self.imagem
+            if not self.em_movimento and self.direcao_olhar == (1, 0):
+                quadros = self.respiracao_direita
+                imagem = quadros[int(self.tempo_respiracao * 8) % len(quadros)]
             if self.em_movimento and self.destino_y < self.grade_y:
-                imagem = self.imagem_costas
+                quadros = self.caminhada_frente
+                imagem = quadros[int(self.tempo_animacao * 10) % len(quadros)]
+            elif self.em_movimento and self.destino_x != self.grade_x:
+                quadros = self.caminhada_direita
+                if self.destino_x < self.grade_x:
+                    quadros = self.caminhada_esquerda
+                imagem = quadros[int(self.tempo_animacao * 10) % len(quadros)]
             tela.blit(imagem, (round(self.x), round(self.y)))
 
     def _direcao(self, teclas):
@@ -133,6 +162,7 @@ class Jogador:
         if self.tempo_parado > 0:
             return False
 
+        self.direcao_olhar = (dx, dy)
         self.destino_x = proximo_x
         self.destino_y = proximo_y
         self.em_movimento = True
