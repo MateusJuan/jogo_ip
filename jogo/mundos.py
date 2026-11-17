@@ -15,27 +15,26 @@ from jogo.blocos import (
 from jogo.configuracoes import TAMANHO_MAPA
 
 
-def criar_mundo(ident, nome, grade, escadas):
-    # cria o dicionário que representa um andar do castelo (substitui a classe Mundo).
-    return {
-        "ident": ident,
-        "nome": nome,
-        "grade": grade,
-        "escadas": escadas,
-    }
+class Mundo:
+    # representa um andar do castelo com identificador, nome, matriz de blocos e escadas.
+    def __init__(self, ident, nome, grade, escadas):
+        self.ident = ident
+        self.nome = nome
+        self.grade = grade
+        self.escadas = escadas
 
 
 def criar_mundos():
-    # monta todos os 4 andares e retorna um dicionário indexado pelo identificador.
+    # instancia todos os 4 andares e retorna um dicionário indexado pelo identificador.
     lobby = _criar_lobby()
     salao = _criar_salao()
     galeria = _criar_galeria()
     torre = _criar_torre()
     return {
-        lobby["ident"]: lobby,
-        salao["ident"]: salao,
-        galeria["ident"]: galeria,
-        torre["ident"]: torre,
+        lobby.ident: lobby,
+        salao.ident: salao,
+        galeria.ident: galeria,
+        torre.ident: torre,
     }
 
 
@@ -83,7 +82,7 @@ def _criar_lobby():
     grade = _grade(GRAMA)
     _borda(grade, MURO)
     escadas = _escada("norte", "salao", 8, 15, True)
-    return criar_mundo("lobby", "Lobby", grade, escadas)
+    return Mundo("lobby", "Lobby", grade, escadas)
 
 
 def _criar_salao():
@@ -97,7 +96,7 @@ def _criar_salao():
     escadas = {}
     escadas.update(_escada("sul", "lobby", 8, 1, False))
     escadas.update(_escada("norte", "galeria", 8, 15, True))
-    return criar_mundo("salao", "Andar 1 - Salão", grade, escadas)
+    return Mundo("salao", "Andar 1 - Salão", grade, escadas)
 
 
 def _criar_galeria():
@@ -112,7 +111,7 @@ def _criar_galeria():
     escadas = {}
     escadas.update(_escada("sul", "salao", 8, 1, False))
     escadas.update(_escada("norte", "torre", 8, 15, True))
-    return criar_mundo("galeria", "Andar 2 - Galeria", grade, escadas)
+    return Mundo("galeria", "Andar 2 - Galeria", grade, escadas)
 
 
 def _criar_torre():
@@ -123,4 +122,4 @@ def _criar_torre():
     for x, y in ((3, 4), (13, 4), (3, 9), (13, 9), (4, 13), (12, 13)):
         grade[y][x] = TORRE_PILAR
     escadas = _escada("sul", "galeria", 8, 1, False)
-    return criar_mundo("torre", "Andar 3 - Torre", grade, escadas)
+    return Mundo("torre", "Andar 3 - Torre", grade, escadas)
