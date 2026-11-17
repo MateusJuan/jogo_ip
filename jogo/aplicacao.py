@@ -29,7 +29,8 @@ class Aplicacao:
         self.jogador = Jogador(
             centro, TAMANHO_MAPA - 3, self.imagens["personagem"], self.imagens["personagem_costas"],
             self.imagens["caminhada_direita"], self.imagens["caminhada_esquerda"],
-            self.imagens["caminhada_frente"], self.imagens["respiracao_direita"]
+            self.imagens["caminhada_frente"], self.imagens["respiracao_direita"],
+            self.imagens["respiracao_esquerda"],
         )
         self.rodando = True
         self.mensagem_bau = ""
@@ -111,6 +112,7 @@ class Aplicacao:
             self.imagens["caminhada_esquerda"],
             self.imagens["caminhada_frente"],
             self.imagens["respiracao_direita"],
+            self.imagens["respiracao_esquerda"],
         )
         self.opcao_game_over = 0
 

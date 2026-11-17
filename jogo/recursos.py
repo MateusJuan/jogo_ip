@@ -44,53 +44,35 @@ def _carregar_costas():
     return quadro
 
 
-def _carregar_respiracao_direita():
-    # Exportacao do Piskel: 16 quadros em ordem de leitura, numa grade 4x4.
-    folha = pygame.image.load(PASTA_ASSETS + "/New Piskel.png").convert_alpha()
-    largura = folha.get_width() // 4
-    altura = folha.get_height() // 4
+def _carregar_animacao_piskel(nome, colunas, linhas):
+    # Le os quadros na ordem de exportacao, preservando a celula e o movimento dos pes.
+    folha = pygame.image.load(PASTA_ASSETS + "/" + nome).convert_alpha()
+    largura = folha.get_width() // colunas
+    altura = folha.get_height() // linhas
     quadros = []
-    for linha in range(4):
-        for coluna in range(4):
+    for linha in range(linhas):
+        for coluna in range(colunas):
             pose = folha.subsurface((coluna * largura, linha * altura, largura, altura))
-            # Mantem a celula inteira para preservar o deslocamento da respiracao.
-            quadros.append(pygame.transform.scale(pose, (TAMANHO_CELULA, TAMANHO_CELULA)))
-    return quadros
-
-
-def _aplicar_paleta_piskel(quadros):
-    # Usa apenas cores presentes na referencia, evitando variacoes entre estados.
-    referencia = pygame.image.load(PASTA_ASSETS + "/New Piskel.png").convert_alpha()
-    paleta = set()
-    for y in range(referencia.get_height()):
-        for x in range(referencia.get_width()):
-            cor = referencia.get_at((x, y))
-            if cor.a >= 128:
-                paleta.add((cor.r, cor.g, cor.b))
-    paleta = sorted(paleta)
-    conversoes = {}
-    for quadro in quadros:
-        for y in range(quadro.get_height()):
-            for x in range(quadro.get_width()):
-                cor = quadro.get_at((x, y))
-                if cor.a > 0:
-                    rgb = (cor.r, cor.g, cor.b)
-                    if rgb not in conversoes:
-                        conversoes[rgb] = min(
-                            paleta, key=lambda p: (p[0] - rgb[0]) ** 2
-                            + (p[1] - rgb[1]) ** 2 + (p[2] - rgb[2]) ** 2
-                        )
-                    quadro.set_at((x, y), (*conversoes[rgb], cor.a))
+            # A ultima linha da corrida tem apenas um quadro; ignora as celulas vazias.
+            if pose.get_bounding_rect().width > 0:
+                quadros.append(pygame.transform.scale(pose, (TAMANHO_CELULA, TAMANHO_CELULA)))
     return quadros
 
 
 def carregar_imagens():
     # carrega todas as texturas do jogo uma única vez e guarda em um dicionário.
+    respiracao_direita = _carregar_animacao_piskel("New Piskel.png", 4, 4)
+    caminhada_direita = _carregar_animacao_piskel(
+        "movimento_jogador/personagem_corrida_x.png", 3, 4
+    )
     return {
-        "respiracao_direita": _carregar_respiracao_direita(),
+        "respiracao_direita": respiracao_direita,
+        "respiracao_esquerda": [pygame.transform.flip(quadro, True, False)
+                               for quadro in respiracao_direita],
         "caminhada_frente": _carregar_caminhada("movimento_jogador/personagem_andando_frente.png"),
-        "caminhada_direita": _aplicar_paleta_piskel(_carregar_caminhada("movimento_jogador/personagem_andando_direita.png")),
-        "caminhada_esquerda": _aplicar_paleta_piskel(_carregar_caminhada("movimento_jogador/personagem_andando_esquerda.png")),
+        "caminhada_direita": caminhada_direita,
+        "caminhada_esquerda": [pygame.transform.flip(quadro, True, False)
+                              for quadro in caminhada_direita],
         "grama": _carregar("grama.png"),
         "muro": _carregar("muro.png"),
         "salao_chao": _carregar("salao_chao.png"),

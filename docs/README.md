@@ -12,6 +12,7 @@ Jogo de exploração de masmorra (*dungeon crawler*) desenvolvido para a discipl
 ## Controles e Mecânicas Implementadas
 
 * **Movimentação (`W A S D` ou `Setas`):** Deslize suave alinhado à grade de `17x17` células.
+* **Animações do personagem:** Corrida lateral com os 10 quadros de `personagem_corrida_x.png` e respiração com os 16 quadros de `New Piskel.png`, enviados por SrFaisca. As sequências são espelhadas para a esquerda, e o personagem mantém a direção ao parar. A subida usa a sequência de costas existente.
 * **Transição de Andares:** Pisar nas escadas ao norte (sobe) ou ao sul (desce) transporta o personagem para o próximo mapa.
 * **Sistema de Vida (HUD):** Barra superior esquerda com **3 corações** (suportando dano de `0.5` coração).
 * **Invulnerabilidade e Hitstun:** Ao sofrer dano, o personagem pisca enquanto está invulnerável e fica momentaneamente paralisado pelo impacto.
