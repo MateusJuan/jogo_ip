@@ -27,6 +27,7 @@ class Jogador:
         self.tempo_parado = 0.0
         # lista que guarda as últimas células seguras pisadas (para voltar antes da beirada).
         self.passos_seguros = [(grade_x, grade_y)]
+        self.game_over = False
 
     def definir_posicao(self, grade_x, grade_y):
         # teletransporta o jogador imediatamente para a célula (grade_x, grade_y).
@@ -44,6 +45,7 @@ class Jogador:
             self.vida = self.vida - quantidade
             if self.vida <= 0:
                 self.vida = 0
+                self.game_over = True
             else:
                 self.tempo_invulneravel = 1.2
                 self.tempo_parado = 0.5
@@ -93,7 +95,7 @@ class Jogador:
 
         # desconta o tempo dos cronômetros de invulnerabilidade e paralisação.
         self.tempo_invulneravel -= dt / 1.5
-        self.tempo_parado -= dt
+        self.tempo_parado -= dt / 1.5
         if self.tempo_invulneravel < 0:
             self.tempo_invulneravel = 0.0
         if self.tempo_parado < 0:
@@ -153,5 +155,5 @@ class Jogador:
                 destino_seguro = self.passos_seguros[0]
             self.definir_posicao(destino_seguro[0], destino_seguro[1])
             self.passos_seguros = [destino_seguro]
-            self.tempo_parado = 1.0
+            self.tempo_parado = 1.2
             self.em_movimento = False
