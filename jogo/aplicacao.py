@@ -30,6 +30,9 @@ class Aplicacao:
             self.imagens["caminhada_frente"], self.imagens["respiracao_direita"]
         )
         self.rodando = True
+        self.opcao_game_over = 0
+        self.fonte_titulo = pygame.font.SysFont("arial", 52, bold=True)
+        self.fonte_opcao = pygame.font.SysFont("arial", 28, bold=True)
 
     def executar(self):
         # loop principal do jogo: processa eventos, atualiza a lógica e redesenha a tela a cada quadro.
@@ -37,17 +40,29 @@ class Aplicacao:
             # o dt (delta time) mede o tempo em segundos desde o último quadro (limitado a 0.05s).
             dt = min(self.clock.tick(FPS) / 1000.0, 0.05)
             self._eventos()
-            atualizar_porta(self.mundo, self.jogador, dt)
-            self.jogador.atualizar(dt, pygame.key.get_pressed(), self.mundo)
-            self._verificar_escada()
+            if not self.jogador.game_over:
+                atualizar_porta(self.mundo, self.jogador, dt)
+                self.jogador.atualizar(dt, pygame.key.get_pressed(), self.mundo)
+                self._verificar_escada()
+            else:
+                self._desenhar_game_over()
             self._desenhar()
         pygame.quit()
 
     def _eventos(self):
-        # verifica os eventos da janela (como clicar no botão x para fechar o jogo).
+        # verifica os eventos da janela e a navegação no menu de game over.
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 self.rodando = False
+            elif evento.type == pygame.KEYDOWN and self.jogador.game_over:
+                if evento.key in (pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s):
+                    # alterna entre 0 (restart) e 1 (quit).
+                    self.opcao_game_over = 1 - self.opcao_game_over
+                elif evento.key == pygame.K_RETURN:
+                    if self.opcao_game_over == 0:
+                        self._reiniciar()
+                    else:
+                        self.rodando = False
 
     def _verificar_escada(self):
         # troca de andar caso o personagem tenha parado exatamente sobre uma célula de escada.
@@ -59,6 +74,19 @@ class Aplicacao:
         escada = self.mundo.escadas[posicao]
         self.mundo = self.mundos[escada["destino"]]
         self.jogador.definir_posicao(escada["x"], escada["y"])
+
+    def _reiniciar(self):
+        # recria os andares e reposiciona o jogador no centro do lobby com vida cheia.
+        self.mundos = criar_mundos()
+        self.mundo = self.mundos["lobby"]
+        centro = TAMANHO_MAPA // 2
+        self.jogador = Jogador(
+            centro,
+            TAMANHO_MAPA - 3,
+            self.imagens["personagem"],
+            self.imagens["personagem_costas"],
+        )
+        self.opcao_game_over = 0
 
     def _desenhar(self):
         # limpa a tela e desenha todas as camadas na ordem: mapa, jogador e interface (hud).
@@ -77,6 +105,8 @@ class Aplicacao:
         )
         self._desenhar_nome()
         self._desenhar_vida()
+        if self.jogador.game_over:
+            self._desenhar_game_over()
         pygame.display.flip()
 
     def _desenhar_nome(self):
@@ -121,3 +151,26 @@ class Aplicacao:
                             (x + coluna * tamanho_pixel, 12 + linha * tamanho_pixel,
                              tamanho_pixel, tamanho_pixel),
                         )
+    def _desenhar_game_over(self):
+        # cria uma camada escura semitransparente por cima do jogo e desenha o menu de derrota.
+        camada = pygame.Surface((LARGURA, ALTURA), pygame.SRCALPHA)
+        camada.fill((0, 0, 0, 185))
+        self.tela.blit(camada, (0, 0))
+
+        titulo = self.fonte_titulo.render("GAME OVER", True, (220, 40, 60))
+        retangulo_titulo = titulo.get_rect(center=(LARGURA // 2, ALTURA // 2 - 60))
+        self.tela.blit(titulo, retangulo_titulo)
+
+        opcoes = ["Restart", "Quit"]
+        for indice, texto_opcao in enumerate(opcoes):
+            # destaca em amarelo a opção selecionada no momento.
+            if indice == self.opcao_game_over:
+                cor = (255, 220, 90)
+                rotulo = "> " + texto_opcao + " <"
+            else:
+                cor = (180, 180, 180)
+                rotulo = texto_opcao
+
+            superficie = self.fonte_opcao.render(rotulo, True, cor)
+            retangulo = superficie.get_rect(center=(LARGURA // 2, ALTURA // 2 + 15 + indice * 44))
+            self.tela.blit(superficie, retangulo)
