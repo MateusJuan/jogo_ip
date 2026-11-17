@@ -49,10 +49,24 @@ class Aplicacao:
         desenhar_mapa(self.tela, self.mundo, self.imagens)
         self.jogador.desenhar(self.tela)
         self._desenhar_nome()
+        self._desenhar_vida()
         pygame.display.flip()
 
     def _desenhar_nome(self):
         texto = self.fonte.render(self.mundo.nome, True, (255, 255, 255))
-        fundo = texto.get_rect(topleft=(8, 8)).inflate(12, 8)
+        fundo = texto.get_rect(topright=(LARGURA - 8, 8)).inflate(12, 8)
         pygame.draw.rect(self.tela, (0, 0, 0), fundo)
-        self.tela.blit(texto, (14, 12))
+        self.tela.blit(texto, texto.get_rect(center=fundo.center))
+
+    def _desenhar_vida(self):
+        for i in range(3):
+            x = 12 + i * 32
+            y = 12
+
+            if self.jogador.vida >= i + 1:
+                pygame.draw.rect(self.tela, (220, 40, 60), (x, y, 24, 24))
+            elif self.jogador.vida >= i + 0.5:
+                pygame.draw.rect(self.tela, (60, 40, 45), (x, y, 24, 24))
+                pygame.draw.rect(self.tela, (220, 40, 60), (x, y, 12, 24))
+            else:
+                pygame.draw.rect(self.tela, (60, 40, 45), (x, y, 24, 24))

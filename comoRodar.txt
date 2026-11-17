@@ -12,11 +12,12 @@ Requisitos
 Abra o terminal na pasta onde o time guarda os projetos e rode:
 
     git clone https://github.com/MateusJuan/jogo_ip.git
+    Mude para a pasta do jogo, execute no bash:
     cd jogo_ip
 
 2. Criar o ambiente e instalar as dependências
 ----------------------------------------------
-Ainda dentro da pasta jogo_ip, no PowerShell:
+Dentro da pasta jogo_ip, no PowerShell:
 
     py -3.13 -m venv .venv
     .\.venv\Scripts\Activate.ps1
