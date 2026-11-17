@@ -1,4 +1,5 @@
 from jogo.blocos import (
+    BAU_FECHADO,
     GALERIA_BURACO,
     GALERIA_CHAO,
     GALERIA_PAREDE,
@@ -22,6 +23,8 @@ class Mundo:
         self.nome = nome
         self.grade = grade
         self.escadas = escadas
+        self.abertura_porta = 0.0
+        self.porta_ativada = False
 
 
 def criar_mundos():
@@ -78,11 +81,18 @@ def _escada(lado, destino, x, y, sobe):
 
 
 def _criar_lobby():
-    # andar 0 (lobby): pátio aberto com escada ao norte levando para o salão.
-    grade = _grade(GRAMA)
-    _borda(grade, MURO)
+    # Entrada fechada com percurso em S entre dois abismos.
+    grade = _grade(GALERIA_BURACO)
+    _borda(grade, GALERIA_PAREDE)
+    _preencher(grade, 7, 12, 9, 15, GALERIA_CHAO)
+    _preencher(grade, 4, 10, 9, 12, GALERIA_CHAO)
+    _preencher(grade, 4, 6, 6, 12, GALERIA_CHAO)
+    _preencher(grade, 4, 5, 10, 7, GALERIA_CHAO)
+    _preencher(grade, 8, 1, 10, 6, GALERIA_CHAO)
+    _preencher(grade, 6, 1, 12, 3, GALERIA_CHAO)
+    grade[2][11] = BAU_FECHADO
     escadas = _escada("norte", "salao", 8, 15, True)
-    return Mundo("lobby", "Lobby", grade, escadas)
+    return Mundo("lobby", "Entrada da Masmorra", grade, escadas)
 
 
 def _criar_salao():

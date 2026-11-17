@@ -11,6 +11,7 @@ TORRE_CHAO = 8
 TORRE_PILAR = 9
 TORRE_PAREDE = 10
 TORRE_ALTAR = 11
+BAU_FECHADO = 12
 
 # lista de blocos que fazem o personagem cair e perder vida (usamos lista no lugar de set).
 BURACOS = [
@@ -19,6 +20,7 @@ BURACOS = [
 
 # lista de blocos que bloqueiam a passagem do personagem (paredes e obstáculos).
 SOLIDOS = [
+    BAU_FECHADO,
     MURO,
     SALAO_ENTULHO,
     SALAO_PAREDE,
@@ -30,6 +32,7 @@ SOLIDOS = [
 
 # dicionário que liga o número do bloco na matriz ao nome da imagem carregada em recursos.py.
 IMAGENS = {
+    BAU_FECHADO: "galeria_chao",
     GRAMA: "grama",
     MURO: "muro",
     SALAO_CHAO: "salao_chao",

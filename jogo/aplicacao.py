@@ -4,7 +4,7 @@ from jogo.configuracoes import (
     ALTURA, FPS, LARGURA, TAMANHO_CELULA, TAMANHO_MAPA, TITULO, ZOOM_CAMERA,
 )
 from jogo.jogador import Jogador
-from jogo.mapa import desenhar_mapa
+from jogo.mapa import atualizar_porta, desenhar_mapa
 from jogo.mundos import criar_mundos
 from jogo.recursos import carregar_imagens
 
@@ -25,7 +25,7 @@ class Aplicacao:
         self.mundo = self.mundos["lobby"]
         centro = TAMANHO_MAPA // 2
         self.jogador = Jogador(
-            centro, centro, self.imagens["personagem"], self.imagens["personagem_costas"]
+            centro, TAMANHO_MAPA - 3, self.imagens["personagem"], self.imagens["personagem_costas"]
         )
         self.rodando = True
 
@@ -35,6 +35,7 @@ class Aplicacao:
             # o dt (delta time) mede o tempo em segundos desde o último quadro (limitado a 0.05s).
             dt = min(self.clock.tick(FPS) / 1000.0, 0.05)
             self._eventos()
+            atualizar_porta(self.mundo, self.jogador, dt)
             self.jogador.atualizar(dt, pygame.key.get_pressed(), self.mundo)
             self._verificar_escada()
             self._desenhar()
