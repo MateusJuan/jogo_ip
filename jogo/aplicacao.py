@@ -47,8 +47,8 @@ class Aplicacao:
             self._desenhar()
             if self.tempo_mensage > 0:
                 self.tempo_mensage -= dt
-                if self.tempo_ensagem <= 0:
-                    self.mensaagem_bau = ""
+                if self.tempo_mensage <= 0:
+                    self.mensagem_bau = ""
         pygame.quit()
 
     def _eventos(self):
@@ -65,7 +65,7 @@ class Aplicacao:
         bx, by = pos_bau
         #abre o baú
         self.mundo.grade[by][bx] = BAU_ABERTO
-        itens = self.mundo.baus.get[pos_bau]
+        itens = self.mundo.baus.get(pos_bau)
         texto_itens = ", ".join(itens) if itens else "vazio"
         self.mensagem_bau = f"Baú aberto! Você encontrou: {texto_itens}"
         self.tempo_mensage = 4.0 #deixa visivle por 4 segundos

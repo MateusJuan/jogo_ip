@@ -145,9 +145,9 @@ def _desenhar_bau_aberto(tela, x, y):
         ((27, 25, 31), (4, 39, 32, 6)),
         ((33, 24, 27), (4, 16, 32, 17)), #base do baú
         ((20, 12, 15), (7, 17, 26, 5)), #interior escuro aberto
-        ((110, 57, 35), (7, 22, 26, 8)) #madeira frontal
-        ((218, 177, 80), (10, 20, 3, 10)) #ferragem esuerda
-        ((218, 177, 80), (27, 20, 3, 10)) #ferragem direita
+        ((110, 57, 35), (7, 22, 26, 8)), #madeira frontal
+        ((218, 177, 80), (10, 20, 3, 10)), #ferragem esuerda
+        ((218, 177, 80), (27, 20, 3, 10)), #ferragem direita
     )
     for cor, (dx, dy, largura, altura) in detalhes:
         pygame.draw.rect(tela, cor, (px + dx, py + dy, largura, altura))
