@@ -75,11 +75,17 @@ def _celulas_portao(lado):
     return []
 
 
-def _escada(lado, destino, x, y, sobe):
+def _escada(lado, destino, x, y, sobe, trancada=None):
     # mapeia as 3 células da escada para o andar de destino e a posição onde o jogador nasce.
     resultado = {}
     for celula in _celulas_portao(lado):
-        resultado[celula] = {"destino": destino, "x": x, "y": y, "sobe": sobe}
+        resultado[celula] = {
+            "destino": destino, 
+            "x": x, 
+            "y": y, 
+            "sobe": sobe, 
+            "trancada": trancada
+        }
     return resultado
 
 
@@ -111,6 +117,9 @@ def _criar_salao():
     escadas = {}
     # Porta Sul: Volta para a Sala 1 (Lobby)
     escadas.update(_escada("sul", "lobby", 8, 1, False))
+
+    # Porta Norte: Trancada por fechadura dourada
+    escadas.update(_escada("norte", "torre", 8, 15, True, trancada="dourada"))
 
     return Mundo("salao", "Andar 1 - Salão Central", grade, escadas)
 

@@ -44,6 +44,13 @@ class Jogador:
         # lista que guarda as últimas células seguras pisadas (para voltar antes da beirada).
         self.passos_seguros = [(grade_x, grade_y)]
         self.game_over = False
+        
+        # Inventário da Masmorra (5 itens)
+        self.tem_espada = False
+        self.tem_arco = False
+        self.tem_chave_prata = False
+        self.tem_chave_dourada = False
+        self.tem_cajado = False
 
     def definir_posicao(self, grade_x, grade_y):
         # teletransporta o jogador imediatamente para a célula (grade_x, grade_y).
@@ -179,7 +186,9 @@ class Jogador:
 
         proximo_x = self.grade_x + dx
         proximo_y = self.grade_y + dy
-        if not pode_andar(mundo, proximo_x, proximo_y):
+        
+        # Passamos 'self' para a função pode_andar verificar o inventário (chaves)
+        if not pode_andar(mundo, proximo_x, proximo_y, self):
             self.movendo_neste_quadro = False
             return False
 

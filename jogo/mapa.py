@@ -4,15 +4,21 @@ from jogo.blocos import BAU_FECHADO,BAU_ABERTO, BURACOS, IMAGENS, SOLIDOS
 from jogo.configuracoes import TAMANHO_CELULA, TAMANHO_MAPA
 
 
-def pode_andar(mundo, x, y):
+def pode_andar(mundo, x, y, jogador=None):
     # verifica se a célula (x, y) está dentro do mapa e não é um obstáculo sólido.
     # impede sair dos limites da matriz 17x17.
+    
     if x < 0 or y < 0 or x >= TAMANHO_MAPA or y >= TAMANHO_MAPA:
         return False
-    # escadas ficam na borda (onde normalmente há parede), mas permitem passagem.
+    
+    # escadas ficam na borda (onde normalmente há parede), mas permitem passagem.    
     if (x, y) in mundo.escadas:
-        return mundo.ident != "lobby" or mundo.abertura_porta >= 1.0
-    # na matriz usamos [y][x], pois 'y' representa a linha e 'x' a coluna.
+            escada = mundo.escadas[(x, y)]
+            if escada.get("trancada") == "dourada":
+                if jogador is None or not jogador.tem_chave_dourada:
+                    return False
+            return mundo.ident != "lobby" or mundo.abertura_porta >= 1.0
+        # na matriz usamos [y][x], pois 'y' representa a linha e 'x' a coluna.
     return mundo.grade[y][x] not in SOLIDOS
 
 
@@ -24,16 +30,15 @@ def desenhar_mapa(tela, mundo, imagens):
             tela.blit(imagens[nome_imagem], (x * TAMANHO_CELULA, y * TAMANHO_CELULA))
             if bloco == BAU_FECHADO:
                 _desenhar_bau(tela, x, y)
-            elif bloco == BAU_ABERTO:
-                _desenhar_bau_aberto(tela, x, y)
 
     # desenha as escadas por cima do piso nas posições cadastradas no mundo.
     for (x, y), escada in mundo.escadas.items():
-        if mundo.ident == "lobby":
+        if escada.get("trancada") == "dourada":
+            _desenhar_fechadura(tela, x, y, (243, 211, 114))  # Dourado
+        elif mundo.ident == "lobby":
             _desenhar_porta(tela, x, y, mundo.abertura_porta)
         else:
             _desenhar_escada(tela, x, y, escada["sobe"])
-
 
 def _desenhar_escada(tela, x, y, sobe):
     # desenha visualmente os degraus da escada e uma seta indicando se sobe ou desce.
@@ -154,3 +159,11 @@ def _desenhar_bau_aberto(tela, x, y):
     )
     for cor, (dx, dy, largura, altura) in detalhes:
         pygame.draw.rect(tela, cor, (px + dx, py + dy, largura, altura))
+
+# Desenha a fechadura dourada da porta norte trancada.
+def _desenhar_fechadura(tela, x, y, cor):
+    px, py = x * TAMANHO_CELULA, y * TAMANHO_CELULA
+    pygame.draw.rect(tela, (30, 30, 30), (px, py, TAMANHO_CELULA, TAMANHO_CELULA))
+    pygame.draw.rect(tela, cor, (px + 12, py + 14, 16, 14), border_radius=2)
+    pygame.draw.arc(tela, cor, (px + 14, py + 6, 12, 14), 0, 3.14, 3)
+    pygame.draw.rect(tela, (20, 20, 20), (px + 18, py + 18, 4, 6))
