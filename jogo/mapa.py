@@ -22,6 +22,9 @@ def pode_andar(mundo, x, y, jogador=None):
         elif tranca == "prata":
             if jogador is None or not jogador.tem_chave_prata:
                 return False
+        elif tranca == "espinhos":
+            # Na Parte 1, os espinhos bloqueiam sempre a passagem
+            return False
             
         return mundo.ident != "lobby" or mundo.abertura_porta >= 1.0
     
@@ -46,6 +49,8 @@ def desenhar_mapa(tela, mundo, imagens):
             _desenhar_fechadura(tela, x, y, (243, 211, 114))  # Dourado
         elif tranca == "prata":
             _desenhar_fechadura(tela, x, y, (192, 192, 192))  # Prateado
+        elif tranca == "espinhos":
+            _desenhar_espinhos(tela, x, y)
         elif mundo.ident == "lobby":
             _desenhar_porta(tela, x, y, mundo.abertura_porta)
         else:
@@ -199,3 +204,19 @@ def _desenhar_fechadura(tela, x, y, cor):
     
     # Buraco da fechadura
     pygame.draw.rect(tela, (20, 20, 20), (px + 18, py + 18, 4, 6))
+    
+# Desenha a fechadura de espinhos para a porta oeste
+def _desenhar_espinhos(tela, x, y):
+    px, py = x * TAMANHO_CELULA, y * TAMANHO_CELULA
+    pygame.draw.rect(tela, (30, 30, 30), (px, py, TAMANHO_CELULA, TAMANHO_CELULA))
+    
+    # Desenha os espinhos na horizontal (apontando para a direita, saindo da parede oeste)
+    for offset_y in [6, 18]:
+        pontos = [
+            (px + 4, py + offset_y),         # Base esquerda (junto à parede)
+            (px + 26, py + offset_y + 4),    # Ponta afiada à direita
+            (px + 4, py + offset_y + 8)      # Base esquerda
+        ]
+        pygame.draw.polygon(tela, (150, 160, 170), pontos)
+        # Linha de reflexo de luz no espinho
+        pygame.draw.line(tela, (220, 230, 240), (px + 4, py + offset_y + 4), (px + 22, py + offset_y + 4), 1)

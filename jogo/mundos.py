@@ -74,6 +74,8 @@ def _celulas_portao(lado):
         return [(centro + deslocamento, ultima) for deslocamento in range(3)]
     elif lado == "leste":
         return [(ultima, centro + deslocamento) for deslocamento in range(3)]
+    elif lado == "oeste":
+        return [(0, centro + deslocamento) for deslocamento in range(3)]
     return []
 
 
@@ -125,6 +127,9 @@ def _criar_salao():
     
     # Porta Leste: Trancada por fechadura de prata
     escadas.update(_escada("leste", "ala_leste", 1, 8, True, trancada="prata"))
+    
+    # Porta Oeste: Bloqueada por espinhos de combate
+    escadas.update(_escada("oeste", "ala_oeste", 15, 8, True, trancada="espinhos"))
 
     return Mundo("salao", "Andar 1 - Salão Central", grade, escadas)
 
