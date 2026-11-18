@@ -9,6 +9,7 @@ from jogo.recursos import carregar_imagens
 from jogo.blocos import BAU_ABERTO
 from jogo.mapa import atualizar_porta, desenhar_mapa, obter_bau_proximo
 from jogo.textos import carregar_fonte, renderizar_texto
+from jogo.inimigos import inimigos
 
 
 TECLAS_MOVIMENTO = (
@@ -73,6 +74,11 @@ class Aplicacao:
                 self.jogador.atualizar(
                     dt, pygame.key.get_pressed(), self.mundo, self.historico_teclas
                 )
+                for inimigo in self.mundo.inimigos:
+                    inimigo.atualizar(dt, self.mundo)
+                    if not inimigo.morto and (inimigo.grade_x, inimigo.grade_y) == (self.jogador.grade_x, self.jogador.grade_y):
+                        self.jogador.levar_dano(1.0)
+
                 self._verificar_escada()
             self._desenhar()
             if self.tempo_mensage > 0 and not self._tutorial_visivel():
@@ -116,7 +122,7 @@ class Aplicacao:
                     self._interagir_bau()
 
                 elif evento.key == pygame.K_SPACE:
-                    self.jogador.ataque()
+                    self.jogador.ataque(self.mundo.inimigos)
 
     def _tutorial_visivel(self):
         return self.tutorial_aberto and self.mundo.ident == "lobby" and not self.jogador.game_over
@@ -169,6 +175,8 @@ class Aplicacao:
         # limpa a tela e desenha todas as camadas na ordem: mapa, jogador e interface (hud).
         self.cena.fill((0, 0, 0))
         desenhar_mapa(self.cena, self.mundo, self.imagens)
+        for inimigo in self.mundo.inimigos:
+            inimigo.desenhar(self.cena)
         self.jogador.desenhar(self.cena)
 
         # acompanha o centro do personagem e limita a camera nas bordas do mapa.

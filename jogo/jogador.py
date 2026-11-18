@@ -104,7 +104,7 @@ class Jogador:
                 self.game_over = True
             else:
                 self.tempo_invulneravel = 1.2
-                self.tempo_parado = 0.5
+                self.tempo_parado = 0.4
             return True
         return False
 
@@ -162,12 +162,12 @@ class Jogador:
         # desconta o tempo dos cronômetros de invulnerabilidade e paralisação.
         self.tempo_invulneravel -= dt / 1.5
         self.tempo_parado -= dt / 1.5
-        if self.tempo_invulneravel < 0:
+        if self.tempo_invulneravel <= 0:
             self.tempo_invulneravel = 0.0
-        if self.tempo_parado < 0:
+        if self.tempo_parado <= 0:
             self.tempo_parado = 0.0
 
-        # --- ATUALIZAÇÃO DO COOLDOWN E ANIMAÇÃO DE ATAQUE ---
+        # ATUALIZAÇÃO DO COOLDOWN E ANIMAÇÃO DE ATAQUE 
         if self.tempo_cooldown_ataque > 0:
             self.tempo_cooldown_ataque -= dt
             self.tempo_animacao_ataque += dt
@@ -278,14 +278,11 @@ class Jogador:
                 destino_seguro = self.passos_seguros[0]
             self.definir_posicao(destino_seguro[0], destino_seguro[1])
             self.passos_seguros = [destino_seguro]
-            self.tempo_parado = 1.2
+            self.tempo_parado = 1.0
             self.em_movimento = False
 
-    def ataque(self):
-        """
-        Executa um ataque básico na célula adjacente para a qual o jogador está olhando.
-        Retorna True se desferiu o golpe com sucesso (respeitando o cooldown).
-        """
+    def ataque(self, inimigos=None):
+        # executa um ataque básico na célula adjacente para a qual o jogador está olhando.
         if (
             "Espada" not in self.inventario
             or self.tempo_cooldown_ataque > 0.0
@@ -299,7 +296,23 @@ class Jogador:
         self.atacando = True
 
         dx, dy = self.direcao_olhar
-        celula_alvo_x = self.destino_x + dx
-        celula_alvo_y = self.destino_y + dy
+        # cria a area de ataque um bloco a frente e expande o raio ao redor dela.
+        area_ataque = pygame.Rect(
+            round(self.x + dx * TAMANHO_CELULA),
+            round(self.y + dy * TAMANHO_CELULA),
+            TAMANHO_CELULA,
+            TAMANHO_CELULA,
+        ).inflate(round(TAMANHO_CELULA * 1.2), round(TAMANHO_CELULA * 1.2))
 
-        return True
+        # verifica se algum inimigo vivo encostou na area do golpe.
+        if inimigos is not None:
+            for inimigo in inimigos:
+                if not inimigo.morto:
+                    rect_inimigo = pygame.Rect(
+                        round(inimigo.x),
+                        round(inimigo.y),
+                        TAMANHO_CELULA,
+                        TAMANHO_CELULA,
+                    )
+                    if area_ataque.colliderect(rect_inimigo):
+                        inimigo.levar_dano(1)
