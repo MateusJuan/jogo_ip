@@ -11,28 +11,6 @@ def _carregar(nome, com_alpha=False):
     return pygame.transform.scale(imagem, (TAMANHO_CELULA, TAMANHO_CELULA))
 
 
-def _carregar_caminhada(nome):
-    # Divide a folha em quatro poses e alinha os pes na mesma altura.
-    folha = pygame.image.load(PASTA_ASSETS + "/" + nome).convert_alpha()
-    largura = folha.get_width() // 4
-    poses = [folha.subsurface((i * largura, 0, largura, folha.get_height()))
-             for i in range(4)]
-    # Ignora pixels quase transparentes nas margens da imagem gerada.
-    limites = [pose.get_bounding_rect(min_alpha=128) for pose in poses]
-    referencia = _carregar("movimento_jogador/parado_direita.png", com_alpha=True).get_bounding_rect()
-    escala = referencia.height / max(area.height for area in limites)
-    quadros = []
-    for pose, area in zip(poses, limites):
-        tamanho = (max(1, round(area.width * escala)),
-                   max(1, round(area.height * escala)))
-        quadro = pygame.Surface((TAMANHO_CELULA, TAMANHO_CELULA), pygame.SRCALPHA)
-        imagem = pygame.transform.scale(pose.subsurface(area), tamanho)
-        quadro.blit(imagem, (referencia.centerx - tamanho[0] // 2,
-                            referencia.bottom - tamanho[1]))
-        quadros.append(quadro)
-    return quadros
-
-
 def _carregar_costas():
     imagem = pygame.image.load(PASTA_ASSETS + "/movimento_jogador/parado_costas.png").convert_alpha()
     area = imagem.get_bounding_rect(min_alpha=128)
@@ -79,7 +57,9 @@ def carregar_imagens():
         "respiracao_direita": respiracao_direita,
         "respiracao_esquerda": [pygame.transform.flip(quadro, True, False)
                                for quadro in respiracao_direita],
-        "caminhada_costas": _carregar_caminhada("movimento_jogador/caminhada_costas.png"),
+        "caminhada_costas": _carregar_animacao_piskel(
+            "movimento_jogador/caminhada_costas.png", 3, 4
+        ),
         "caminhada_direita": caminhada_direita,
         "caminhada_esquerda": [pygame.transform.flip(quadro, True, False)
                               for quadro in caminhada_direita],
