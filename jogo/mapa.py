@@ -2,6 +2,7 @@ import pygame
 
 from jogo.blocos import BAU_FECHADO,BAU_ABERTO, BURACOS, IMAGENS, SOLIDOS
 from jogo.configuracoes import TAMANHO_CELULA, TAMANHO_MAPA
+from jogo.entrada import desenhar_entrada
 
 
 def pode_andar(mundo, x, y):
@@ -18,20 +19,24 @@ def pode_andar(mundo, x, y):
 
 def desenhar_mapa(tela, mundo, imagens):
     # percorre a matriz do andar atual e desenha cada bloco e escada na tela.
+    lobby = mundo.ident == "lobby"
+    if lobby:
+        desenhar_entrada(tela, tuple(tuple(linha) for linha in mundo.grade))
     for y, linha in enumerate(mundo.grade):
         for x, bloco in enumerate(linha):
-            nome_imagem = IMAGENS[bloco]
-            tela.blit(imagens[nome_imagem], (x * TAMANHO_CELULA, y * TAMANHO_CELULA))
+            if not lobby:
+                nome_imagem = IMAGENS[bloco]
+                tela.blit(imagens[nome_imagem], (x * TAMANHO_CELULA, y * TAMANHO_CELULA))
             if bloco == BAU_FECHADO:
                 _desenhar_bau(tela, x, y)
             elif bloco == BAU_ABERTO:
                 _desenhar_bau_aberto(tela, x, y)
 
     # desenha as escadas por cima do piso nas posições cadastradas no mundo.
-    for (x, y), escada in mundo.escadas.items():
-        if mundo.ident == "lobby":
-            _desenhar_porta(tela, x, y, mundo.abertura_porta)
-        else:
+    if lobby:
+        _desenhar_porta(tela, mundo.abertura_porta)
+    else:
+        for (x, y), escada in mundo.escadas.items():
             _desenhar_escada(tela, x, y, escada["sobe"])
 
 
@@ -76,39 +81,43 @@ def atualizar_porta(mundo, jogador, dt):
             mundo.abertura_porta = max(0.0, mundo.abertura_porta - dt * 2.5)
 
 
-def _desenhar_porta(tela, x, y, abertura):
-    # Portal aberto de pedra, alinhado com as tres celulas da saida.
-    px, py = x * TAMANHO_CELULA, y * TAMANHO_CELULA
-    pygame.draw.rect(tela, (19, 22, 28), (px, py, 40, 40))
-    pygame.draw.rect(tela, (105, 109, 110), (px, py, 40, 6))
-    pygame.draw.rect(tela, (173, 163, 137), (px, py + 34, 40, 6))
-    if x == TAMANHO_MAPA // 2 - 1:
-        pygame.draw.rect(tela, (119, 122, 118), (px, py, 6, 34))
-        pygame.draw.rect(tela, (67, 73, 77), (px + 6, py + 6, 3, 28))
-    if x == TAMANHO_MAPA // 2 + 1:
-        pygame.draw.rect(tela, (119, 122, 118), (px + 34, py, 6, 34))
-        pygame.draw.rect(tela, (67, 73, 77), (px + 31, py + 6, 3, 28))
-
+def _desenhar_porta(tela, abertura):
+    px = (TAMANHO_MAPA // 2 - 1) * TAMANHO_CELULA
+    pygame.draw.rect(tela, (10, 18, 22), (px, 0, 120, 40))
+    for y in (18, 24, 30):
+        pygame.draw.rect(tela, (37, 48, 46), (px + 12, y, 96, 3))
     # Duas folhas de madeira deslizam para as laterais dentro do portal.
-    inicio = (TAMANHO_MAPA // 2 - 1) * TAMANHO_CELULA + 6
-    largura = 3 * TAMANHO_CELULA - 12
+    inicio = px + 8
+    largura = 104
     folha = pygame.Surface((largura // 2, 28))
-    folha.fill((61, 34, 29))
+    folha.fill((32, 29, 25))
     for coluna in range(0, largura // 2, 9):
-        pygame.draw.rect(folha, (128, 73, 39), (coluna + 1, 1, 7, 26))
-        pygame.draw.line(folha, (178, 112, 54), (coluna + 2, 2), (coluna + 2, 25))
+        pygame.draw.rect(folha, (91, 60, 37), (coluna + 1, 1, 7, 26))
+        pygame.draw.line(folha, (128, 89, 51), (coluna + 2, 2), (coluna + 2, 25))
     for faixa in (5, 21):
         pygame.draw.rect(folha, (48, 48, 54), (0, faixa, largura // 2, 3))
         for rebite in range(4, largura // 2, 12):
             pygame.draw.rect(folha, (158, 153, 132), (rebite, faixa, 2, 2))
     pygame.draw.rect(folha, (212, 170, 74), (largura // 2 - 8, 12, 4, 5))
     recorte_anterior = tela.get_clip()
-    tela.set_clip(recorte_anterior.clip(pygame.Rect(px, py + 6, 40, 28)))
+    tela.set_clip(recorte_anterior.clip(pygame.Rect(inicio, 6, largura, 28)))
     deslocamento = round(abertura * largura / 2)
-    tela.blit(folha, (inicio - deslocamento, py + 6))
+    tela.blit(folha, (inicio - deslocamento, 6))
     tela.blit(pygame.transform.flip(folha, True, False),
-              (inicio + largura // 2 + deslocamento, py + 6))
+              (inicio + largura // 2 + deslocamento, 6))
     tela.set_clip(recorte_anterior)
+
+    perfil = ((0, 34), (0, 18), (12, 7), (37, 0), (83, 0), (108, 7),
+              (120, 18), (120, 34), (110, 34), (110, 22), (102, 15),
+              (81, 8), (39, 8), (18, 15), (10, 22), (10, 34))
+    pygame.draw.polygon(tela, (111, 117, 98), [(px + x, y) for x, y in perfil])
+    for x, y, fim_x, fim_y in ((12, 7, 18, 15), (36, 0, 39, 8), (84, 0, 81, 8),
+                               (108, 7, 102, 15), (0, 25, 10, 25), (110, 25, 120, 25)):
+        pygame.draw.line(tela, (53, 61, 55), (px + x, y), (px + fim_x, fim_y), 2)
+    pygame.draw.polygon(tela, (170, 151, 100),
+                        ((px + 54, 0), (px + 66, 0), (px + 64, 8), (px + 56, 8)))
+    pygame.draw.rect(tela, (124, 124, 97), (px, 34, 120, 3))
+    pygame.draw.rect(tela, (57, 66, 59), (px, 37, 120, 3))
 
 
 def _desenhar_bau(tela, x, y):
