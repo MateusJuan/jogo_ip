@@ -63,6 +63,7 @@ def identificando_buraco(mundo, x, y):
         return False
     return mundo.grade[y][x] in BURACOS
 
+
 def atualizar_porta(mundo, jogador, dt):
     # Abre ao chegar a duas celulas da entrada e permanece aberta.
     if mundo.ident == "lobby":
@@ -130,6 +131,7 @@ def _desenhar_bau(tela, x, y):
     for cor, (dx, dy, largura, altura) in detalhes:
         pygame.draw.rect(tela, cor, (px + dx, py + dy, largura, altura))
 
+
 #verificar se há algum baú perto
 def obter_bau_proximo(mundo, jogador):
     jx, jy = jogador.grade_x, jogador.grade_y
@@ -138,6 +140,7 @@ def obter_bau_proximo(mundo, jogador):
         if (bx, by) in mundo.baus:
             return (bx, by)
     return None
+
 
 def _desenhar_bau_aberto(tela, x, y):
     px, py = x * TAMANHO_CELULA, y * TAMANHO_CELULA
