@@ -11,6 +11,14 @@ from jogo.mapa import atualizar_porta, desenhar_mapa, obter_bau_proximo
 from jogo.textos import carregar_fonte, renderizar_texto
 
 
+TECLAS_MOVIMENTO = (
+    pygame.K_w, pygame.K_UP,
+    pygame.K_s, pygame.K_DOWN,
+    pygame.K_a, pygame.K_LEFT,
+    pygame.K_d, pygame.K_RIGHT,
+)
+
+
 class Aplicacao:
     # gerencia a janela do pygame, o loop principal, as trocas de andar e o desenho do hud.
     def __init__(self):
@@ -40,6 +48,7 @@ class Aplicacao:
         self.fonte_tutorial_destaque = carregar_fonte(20, negrito=True)
         self.fonte_tutorial_titulo = carregar_fonte(28, negrito=True)
         self.tutorial_aberto = False
+        self.historico_teclas = []
 
     def _criar_jogador(self):
         return Jogador(
@@ -61,7 +70,9 @@ class Aplicacao:
             self._eventos()
             if not self.jogador.game_over and not self._tutorial_visivel():
                 atualizar_porta(self.mundo, self.jogador, dt)
-                self.jogador.atualizar(dt, pygame.key.get_pressed(), self.mundo)
+                self.jogador.atualizar(
+                    dt, pygame.key.get_pressed(), self.mundo, self.historico_teclas
+                )
                 self._verificar_escada()
             self._desenhar()
             if self.tempo_mensage > 0 and not self._tutorial_visivel():
@@ -73,6 +84,14 @@ class Aplicacao:
     def _eventos(self):
         # verifica os eventos da janela e a navegação no menu de game over.
         for evento in pygame.event.get():
+            if evento.type == pygame.KEYDOWN and evento.key in TECLAS_MOVIMENTO:
+                if evento.key in self.historico_teclas:
+                    self.historico_teclas.remove(evento.key)
+                self.historico_teclas.append(evento.key)
+            elif evento.type == pygame.KEYUP and evento.key in TECLAS_MOVIMENTO:
+                if evento.key in self.historico_teclas:
+                    self.historico_teclas.remove(evento.key)
+
             if evento.type == pygame.QUIT:
                 self.rodando = False
             elif evento.type == pygame.KEYDOWN and self.jogador.game_over:
@@ -144,6 +163,7 @@ class Aplicacao:
         self.tempo_mensage = 0.0
         self.opcao_game_over = 0
         self.tutorial_aberto = False
+        self.historico_teclas.clear()
 
     def _desenhar(self):
         # limpa a tela e desenha todas as camadas na ordem: mapa, jogador e interface (hud).
@@ -340,6 +360,7 @@ class Aplicacao:
         fundo = texto.get_rect(center=(LARGURA // 2, ALTURA - 32)).inflate(12, 8)
         pygame.draw.rect(self.tela, (0, 0, 0), fundo)
         self.tela.blit(texto, texto.get_rect(center=fundo.center))
+
     def _desenhar_game_over(self):
         # cria uma camada escura semitransparente por cima do jogo e desenha o menu de derrota.
         camada = pygame.Surface((LARGURA, ALTURA), pygame.SRCALPHA)
