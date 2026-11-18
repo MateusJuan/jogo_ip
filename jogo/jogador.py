@@ -9,6 +9,9 @@ class Jogador:
     def __init__(
         self, grade_x, grade_y, imagem, imagem_costas, caminhada_direita,
         caminhada_esquerda, caminhada_costas, respiracao_direita, respiracao_esquerda,
+        # --- NOVOS ARGUMENTOS PARA AS IMAGENS DE ATAQUE ---
+        ataque_direita=None, ataque_esquerda=None, ataque_costas=None
+    
     ):
         # posição lógica na matriz (0 a 16).
         self.grade_x = grade_x
@@ -44,6 +47,29 @@ class Jogador:
         # lista que guarda as últimas células seguras pisadas (para voltar antes da beirada).
         self.passos_seguros = [(grade_x, grade_y)]
         self.game_over = False
+
+        # --- ATRIBUTOS DE ATAQUE ---
+        self.tempo_cooldown_ataque = 0.0  # Tempo restante para o próximo ataque
+        self.duracao_cooldown = 0.5      # Intervalo em segundos entre os ataques
+        self.atacando = False             # Flag para indicar se está executando o ataque
+        self.tempo_animacao_ataque = 0.5  # Para controlar animações de ataque futuras
+        # ---------------------------------
+        
+        # --- IMAGENS DE ATAQUE BLINDADAS ---
+        def _garantir_lista(val, padrao):
+            if val is None:
+                return [padrao]
+            if isinstance(val, list):
+                # Se for uma lista de listas, pega o primeiro elemento interno
+                if len(val) > 0 and isinstance(val[0], list):
+                    return val[0]
+                return val
+            return [val]
+
+        self.ataque_direita = _garantir_lista(ataque_direita, imagem)
+        self.ataque_esquerda = _garantir_lista(ataque_esquerda, self.imagem_esquerda)
+        self.ataque_costas = _garantir_lista(ataque_costas, imagem_costas)
+        self.tempo_animacao_ataque = 0.0
 
     def definir_posicao(self, grade_x, grade_y):
         # teletransporta o jogador imediatamente para a célula (grade_x, grade_y).
@@ -128,10 +154,20 @@ class Jogador:
             self.tempo_invulneravel = 0.0
         if self.tempo_parado < 0:
             self.tempo_parado = 0.0
+        
+        # --- ATUALIZAÇÃO DO COOLDOWN E ANIMAÇÃO DE ATAQUE ---
+        if self.tempo_cooldown_ataque > 0:
+            self.tempo_cooldown_ataque -= dt
+            self.tempo_animacao_ataque += dt
+            if self.tempo_cooldown_ataque <= 0:
+                self.tempo_cooldown_ataque = 0.0
+                self.atacando = False
 
     def desenhar(self, tela):
         # desenha o personagem na tela, alternando a visibilidade para piscar quando invulnerável.
         if self.tempo_invulneravel <= 0 or int(self.tempo_invulneravel * 12) % 2 == 0:
+            
+            # 1. Desenha o personagem 
             imagem = self.imagem if self.direcao_lateral == 1 else self.imagem_esquerda
             if self.movendo_neste_quadro and self.direcao_olhar == (0, -1):
                 quadros = self.caminhada_costas
@@ -148,7 +184,30 @@ class Jogador:
                 if self.direcao_lateral == -1:
                     quadros = self.respiracao_esquerda
                 imagem = quadros[int(self.tempo_respiracao * 8) % len(quadros)]
+
+            # Desenha a imagem na tela
             tela.blit(imagem, (round(self.x), round(self.y)))
+
+            if self.atacando:
+                dx, dy = self.direcao_olhar
+                
+                # Seleciona a imagem da espada de acordo com a direção do olhar
+                if dx == 1:   # Direita
+                    img_espada = self.ataque_direita[0] if isinstance(self.ataque_direita, list) else self.ataque_direita
+                elif dx == -1: # Esquerda
+                    img_espada = self.ataque_esquerda[0] if isinstance(self.ataque_esquerda, list) else self.ataque_esquerda
+                elif dy == -1: # Cima / Costas
+                    img_espada = self.ataque_costas[0] if isinstance(self.ataque_costas, list) else self.ataque_costas
+                else:          # Baixo / Frente (usa a direita ou costas rotacionada, dependendo do seu setup)
+                    img_espada = self.ataque_direita[0] if isinstance(self.ataque_direita, list) else self.ataque_direita
+
+                # Calcula a posição exata 1 bloco (TAMANHO_CELULA) adiante na direção do olhar
+                pos_espada_x = round(self.x + (dx * TAMANHO_CELULA))
+                pos_espada_y = round(self.y + (dy * TAMANHO_CELULA))
+
+                # Blita a espada na tela na célula da frente
+                if isinstance(img_espada, pygame.Surface):
+                    tela.blit(img_espada, (pos_espada_x, pos_espada_y))
 
     def _direcao(self, teclas):
         # converte as teclas wasd ou setas direcionais em deslocamento (dx, dy) na grade.
@@ -207,3 +266,32 @@ class Jogador:
             self.passos_seguros = [destino_seguro]
             self.tempo_parado = 1.2
             self.em_movimento = False
+
+    def ataque(self):
+        """
+        Executa um ataque básico na célula adjacente para a qual o jogador está olhando.
+        Retorna True se desferiu o golpe com sucesso (respeitando o cooldown).
+        """
+        if self.tempo_cooldown_ataque > 0.0 or self.tempo_parado > 0:
+            return False
+
+        # Ativa o cooldown e o estado de ataque
+        self.tempo_cooldown_ataque = self.duracao_cooldown
+        self.atacando = True
+
+        # Calcula a posição da célula atingida com base na direção do olhar
+        dx, dy = self.direcao_olhar
+        celula_alvo_x = self.grade_x + dx
+        celula_alvo_y = self.grade_y + dy
+
+        return True
+        # Exemplo de verificação de acerto em inimigos baseada em grade
+    """ for inimigo in lista_inimigos:
+            if inimigo.grade_x == celula_alvo_x and inimigo.grade_y == celula_alvo_y:
+                # Supondo que o inimigo possua um método levar_dano ou similar
+                if hasattr(inimigo, 'levar_dano'):
+                    inimigo.levar_dano(1.0) # Aplica 1 de dano ao inimigo """
+
+        
+    
+    
