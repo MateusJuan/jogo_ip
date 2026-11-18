@@ -58,6 +58,11 @@ def _carregar_animacao_piskel(nome, colunas, linhas):
                 quadros.append(pygame.transform.scale(pose, (TAMANHO_CELULA, TAMANHO_CELULA)))
     return quadros
 
+def _carregar_espada(nome):
+    # Carrega a imagem da espada da pasta assets e garante transparência
+    imagem = pygame.image.load(PASTA_ASSETS + "/" + nome).convert_alpha()
+    return pygame.transform.scale(imagem, (TAMANHO_CELULA, TAMANHO_CELULA))
+
 
 def carregar_imagens():
     # carrega todas as texturas do jogo uma única vez e guarda em um dicionário.
@@ -67,6 +72,9 @@ def carregar_imagens():
     caminhada_direita = _carregar_animacao_piskel(
         "movimento_jogador/corrida_direita.png", 3, 4
     )
+    
+    # Carrega a espada base (apontando para a direita) caso utilize
+    espada_base = _carregar_espada("espada.png")
     return {
         "respiracao_direita": respiracao_direita,
         "respiracao_esquerda": [pygame.transform.flip(quadro, True, False)
@@ -89,4 +97,11 @@ def carregar_imagens():
         "torre_altar": _carregar("torre_altar.png"),
         "personagem": _carregar("movimento_jogador/parado_direita.png", com_alpha=True),
         "personagem_costas": _carregar_costas(),
+        # Imagens da espada integradas sem perder nada
+        "ataque_direita": espada_base,
+        "ataque_esquerda": pygame.transform.flip(espada_base, True, False),
+        "ataque_costas": pygame.transform.rotate(espada_base, 90),
     }
+
+
+

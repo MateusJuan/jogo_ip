@@ -32,6 +32,10 @@ class Aplicacao:
             self.imagens["caminhada_direita"], self.imagens["caminhada_esquerda"],
             self.imagens["caminhada_costas"], self.imagens["respiracao_direita"],
             self.imagens["respiracao_esquerda"],
+            # --- ADICIONE ESTES PARÂMETROS COM AS IMAGENS DA SUA ESPADA ---
+            ataque_direita=[self.imagens["ataque_direita"]],     # Exemplo de imagem com a espada para a direita
+            ataque_esquerda=[self.imagens["ataque_esquerda"]],   # Exemplo de imagem com a espada para a esquerda
+            ataque_costas=[self.imagens["ataque_costas"]]
         )
         self.rodando = True
         self.mensagem_bau = ""
@@ -44,6 +48,7 @@ class Aplicacao:
         self.fonte_tutorial_destaque = carregar_fonte(20, negrito=True)
         self.fonte_tutorial_titulo = carregar_fonte(28, negrito=True)
         self.tutorial_aberto = False
+
 
     def executar(self):
         # loop principal do jogo: processa eventos, atualiza a lógica e redesenha a tela a cada quadro.
@@ -77,13 +82,20 @@ class Aplicacao:
                     else:
                         self.rodando = False
             elif evento.type == pygame.KEYDOWN:
+
                 if evento.key == pygame.K_h and self.mundo.ident == "lobby":
                     self.tutorial_aberto = not self.tutorial_aberto
+
                 elif self._tutorial_visivel():
                     if evento.key in (pygame.K_RETURN, pygame.K_ESCAPE):
                         self.tutorial_aberto = False
+
                 elif evento.key == pygame.K_f:
                     self._interagir_bau()
+
+                elif evento.key == pygame.K_SPACE:
+                
+                    self.jogador.ataque()  # <-- Aqui dispara o ataque!
 
     def _tutorial_visivel(self):
         return self.tutorial_aberto and self.mundo.ident == "lobby" and not self.jogador.game_over
