@@ -48,6 +48,8 @@ class Jogador:
         self.passos_seguros = [(grade_x, grade_y)]
         self.game_over = False
 
+        self.inventario = []
+
         # --- ATRIBUTOS DE ATAQUE ---
         self.tempo_cooldown_ataque = 0.0  # Tempo restante para o próximo ataque
         self.duracao_cooldown = 0.5      # Intervalo em segundos entre os ataques
@@ -272,7 +274,11 @@ class Jogador:
         Executa um ataque básico na célula adjacente para a qual o jogador está olhando.
         Retorna True se desferiu o golpe com sucesso (respeitando o cooldown).
         """
-        if self.tempo_cooldown_ataque > 0.0 or self.tempo_parado > 0:
+        if (
+            "Espada" not in self.inventario
+            or self.tempo_cooldown_ataque > 0.0
+            or self.tempo_parado > 0
+        ):
             return False
 
         # Ativa o cooldown e o estado de ataque

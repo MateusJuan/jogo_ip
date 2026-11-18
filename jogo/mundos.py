@@ -25,7 +25,6 @@ class Mundo:
         self.escadas = escadas
         self.baus = baus or {} #depois colcoar a espada dentro do bau da entrada da masmorra
         self.abertura_porta = 0.0
-        self.porta_ativada = False
 
 
 def criar_mundos():

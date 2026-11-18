@@ -1,13 +1,12 @@
 import pygame
 
 from jogo.configuracoes import (
-    ALTURA, FPS, LARGURA, TAMANHO_CELULA, TAMANHO_MAPA, TITULO, ZOOM_CAMERA,
+    ALTURA, FPS, LARGURA, SLOTS_INVENTARIO, TAMANHO_CELULA, TAMANHO_MAPA, TITULO, ZOOM_CAMERA,
 )
 from jogo.jogador import Jogador
-from jogo.mapa import atualizar_porta, desenhar_mapa
 from jogo.mundos import criar_mundos
 from jogo.recursos import carregar_imagens
-from jogo.blocos import BAU_ABERTO, BAU_FECHADO
+from jogo.blocos import BAU_ABERTO
 from jogo.mapa import atualizar_porta, desenhar_mapa, obter_bau_proximo
 from jogo.textos import carregar_fonte, renderizar_texto
 
@@ -24,19 +23,12 @@ class Aplicacao:
         self.clock = pygame.time.Clock()
         self.fonte = carregar_fonte(20)
         self.imagens = carregar_imagens()
+        self.icones_inventario = {
+            "Espada": pygame.transform.scale(self.imagens["ataque_direita"], (28, 28)),
+        }
         self.mundos = criar_mundos()
         self.mundo = self.mundos["lobby"]
-        centro = TAMANHO_MAPA // 2
-        self.jogador = Jogador(
-            centro, TAMANHO_MAPA - 3, self.imagens["personagem"], self.imagens["personagem_costas"],
-            self.imagens["caminhada_direita"], self.imagens["caminhada_esquerda"],
-            self.imagens["caminhada_costas"], self.imagens["respiracao_direita"],
-            self.imagens["respiracao_esquerda"],
-            # --- ADICIONE ESTES PARÂMETROS COM AS IMAGENS DA SUA ESPADA ---
-            ataque_direita=[self.imagens["ataque_direita"]],     # Exemplo de imagem com a espada para a direita
-            ataque_esquerda=[self.imagens["ataque_esquerda"]],   # Exemplo de imagem com a espada para a esquerda
-            ataque_costas=[self.imagens["ataque_costas"]]
-        )
+        self.jogador = self._criar_jogador()
         self.rodando = True
         self.mensagem_bau = ""
         self.tempo_mensage = 0.0
@@ -49,6 +41,17 @@ class Aplicacao:
         self.fonte_tutorial_titulo = carregar_fonte(28, negrito=True)
         self.tutorial_aberto = False
 
+    def _criar_jogador(self):
+        return Jogador(
+            TAMANHO_MAPA // 2, TAMANHO_MAPA - 3,
+            self.imagens["personagem"], self.imagens["personagem_costas"],
+            self.imagens["caminhada_direita"], self.imagens["caminhada_esquerda"],
+            self.imagens["caminhada_costas"], self.imagens["respiracao_direita"],
+            self.imagens["respiracao_esquerda"],
+            ataque_direita=self.imagens["ataque_direita"],
+            ataque_esquerda=self.imagens["ataque_esquerda"],
+            ataque_costas=self.imagens["ataque_costas"],
+        )
 
     def executar(self):
         # loop principal do jogo: processa eventos, atualiza a lógica e redesenha a tela a cada quadro.
@@ -94,8 +97,7 @@ class Aplicacao:
                     self._interagir_bau()
 
                 elif evento.key == pygame.K_SPACE:
-                
-                    self.jogador.ataque()  # <-- Aqui dispara o ataque!
+                    self.jogador.ataque()
 
     def _tutorial_visivel(self):
         return self.tutorial_aberto and self.mundo.ident == "lobby" and not self.jogador.game_over
@@ -105,13 +107,20 @@ class Aplicacao:
         if not pos_bau:
             return
         bx, by = pos_bau
-        #abre o baú
+        itens = self.mundo.baus[pos_bau]
+        self.tempo_mensage = 4.0
+        if len(self.jogador.inventario) + len(itens) > SLOTS_INVENTARIO:
+            self.mensagem_bau = "Inventário cheio!"
+            return
+
         self.mundo.grade[by][bx] = BAU_ABERTO
-        itens = self.mundo.baus.get(pos_bau)
-        texto_itens = ", ".join(itens) if itens else "vazio"
-        self.mensagem_bau = f"Baú aberto! Você encontrou: {texto_itens}"
-        self.tempo_mensage = 4.0 #deixa visivle por 4 segundos
-    
+        self.jogador.inventario.extend(itens)
+        if "Espada" in itens:
+            self.mensagem_bau = "Espada obtida! Pressione Espaço para atacar."
+        else:
+            texto_itens = ", ".join(itens) if itens else "vazio"
+            self.mensagem_bau = f"Baú aberto! Você encontrou: {texto_itens}"
+
     def _verificar_escada(self):
         # troca de andar caso o personagem tenha parado exatamente sobre uma célula de escada.
         if self.jogador.em_movimento:
@@ -120,6 +129,8 @@ class Aplicacao:
         if posicao not in self.mundo.escadas:
             return
         escada = self.mundo.escadas[posicao]
+        if self.mundo.ident == "lobby":
+            self.mundo.abertura_porta = 0.0
         self.mundo = self.mundos[escada["destino"]]
         self.jogador.definir_posicao(escada["x"], escada["y"])
         self.tutorial_aberto = False
@@ -128,18 +139,9 @@ class Aplicacao:
         # recria os andares e reposiciona o jogador no centro do lobby com vida cheia.
         self.mundos = criar_mundos()
         self.mundo = self.mundos["lobby"]
-        centro = TAMANHO_MAPA // 2
-        self.jogador = Jogador(
-            centro,
-            TAMANHO_MAPA - 3,
-            self.imagens["personagem"],
-            self.imagens["personagem_costas"],
-            self.imagens["caminhada_direita"],
-            self.imagens["caminhada_esquerda"],
-            self.imagens["caminhada_costas"],
-            self.imagens["respiracao_direita"],
-            self.imagens["respiracao_esquerda"],
-        )
+        self.jogador = self._criar_jogador()
+        self.mensagem_bau = ""
+        self.tempo_mensage = 0.0
         self.opcao_game_over = 0
         self.tutorial_aberto = False
 
@@ -160,6 +162,7 @@ class Aplicacao:
         )
         self._desenhar_nome()
         self._desenhar_vida()
+        self._desenhar_inventario()
         self._desenhar_mensagem_bau()
         if not self.jogador.game_over:
             if self._tutorial_visivel():
@@ -182,22 +185,19 @@ class Aplicacao:
     def _desenhar_dica_bau(self):
         if self.jogador.em_movimento:
             return
-        pos_bau = obter_bau_proximo(self.mundo, self.jogador)
-        if pos_bau:
-            bx, by = pos_bau
-            if self.mundo.grade[by][bx] == BAU_FECHADO:
-                texto = renderizar_texto(self.fonte, "[F] Abrir baú", (255, 224, 148))
-                fundo = texto.get_rect(center=(LARGURA // 2, ALTURA - 82)).inflate(28, 16)
-                pygame.draw.rect(self.tela, (24, 23, 29), fundo)
-                pygame.draw.rect(self.tela, (155, 120, 66), fundo, 2)
-                self.tela.blit(texto, texto.get_rect(center=fundo.center))
+        if obter_bau_proximo(self.mundo, self.jogador):
+            texto = renderizar_texto(self.fonte, "[F] Abrir baú", (255, 224, 148))
+            fundo = texto.get_rect(center=(LARGURA // 2, ALTURA - 82)).inflate(28, 16)
+            pygame.draw.rect(self.tela, (24, 23, 29), fundo)
+            pygame.draw.rect(self.tela, (155, 120, 66), fundo, 2)
+            self.tela.blit(texto, texto.get_rect(center=fundo.center))
 
     def _desenhar_tutorial(self):
         # Pausa a exploracao enquanto o jogador le as instrucoes da entrada.
         camada = pygame.Surface((LARGURA, ALTURA), pygame.SRCALPHA)
         camada.fill((7, 10, 16, 190))
         self.tela.blit(camada, (0, 0))
-        painel = pygame.Rect(0, 0, 620, 592)
+        painel = pygame.Rect(0, 0, 620, 652)
         painel.center = (LARGURA // 2, ALTURA // 2)
         # A moldura de pedra tambem e ampliada sem suavizacao, em pixels de 2x2.
         pedra = pygame.Surface((painel.width // 2, painel.height // 2), pygame.SRCALPHA)
@@ -241,6 +241,10 @@ class Aplicacao:
             ("F", "Abra os baús", (
                 "Ao lado do baú, pressione F para abrir.",
             )),
+            ("ESPAÇO", "Ataque com a espada", (
+                "Pegue a espada no baú da entrada.",
+                "Depois, pressione Espaço para atacar.",
+            )),
             ("SAÍDA", "Avance pela masmorra", (
                 "Siga o caminho até o portão ao norte.",
                 "Chegue perto para abrir e subir.",
@@ -259,8 +263,8 @@ class Aplicacao:
                 texto = renderizar_texto(self.fonte_tutorial, linha, (198, 197, 178))
                 self.tela.blit(texto, (x + 88, topo + 28 + numero * 24))
 
-        pygame.draw.line(self.tela, (107, 96, 68), (x, y + 502), (painel.right - 24, y + 502), 2)
-        botao = pygame.Rect(x, y + 522, 280, 44)
+        pygame.draw.line(self.tela, (107, 96, 68), (x, y + 580), (painel.right - 24, y + 580), 2)
+        botao = pygame.Rect(x, y + 600, 280, 44)
         pygame.draw.rect(self.tela, (211, 171, 103), botao)
         pygame.draw.rect(self.tela, (248, 216, 151), botao, 2)
         texto_botao = renderizar_texto(
@@ -312,6 +316,23 @@ class Aplicacao:
                             (x + coluna * tamanho_pixel, 12 + linha * tamanho_pixel,
                              tamanho_pixel, tamanho_pixel),
                         )
+
+    def _desenhar_inventario(self):
+        tamanho = 40
+        passo = tamanho + 4
+        largura = SLOTS_INVENTARIO * passo - 4
+        x = LARGURA - 12 - largura
+        for indice in range(SLOTS_INVENTARIO):
+            slot = pygame.Rect(x + indice * passo, 46, tamanho, tamanho)
+            pygame.draw.rect(self.tela, (24, 23, 29), slot)
+            pygame.draw.rect(self.tela, (111, 96, 65), slot, 2)
+            if indice < len(self.jogador.inventario):
+                item = self.jogador.inventario[indice]
+                icone = self.icones_inventario.get(item)
+                if icone is None:
+                    icone = renderizar_texto(self.fonte, item[:1], (238, 215, 165))
+                self.tela.blit(icone, icone.get_rect(center=slot.center))
+
     def _desenhar_mensagem_bau(self):
         if not self.mensagem_bau:
             return

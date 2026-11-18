@@ -64,16 +64,16 @@ def identificando_buraco(mundo, x, y):
     return mundo.grade[y][x] in BURACOS
 
 def atualizar_porta(mundo, jogador, dt):
-    # Abre ao chegar a duas celulas da entrada e permanece aberta.
+    # Abre a ate duas celulas do centro do portao e fecha ao se afastar.
     if mundo.ident == "lobby":
         centro_x = (TAMANHO_MAPA // 2 + 0.5) * TAMANHO_CELULA
         centro_y = TAMANHO_CELULA / 2
         dx = jogador.x + TAMANHO_CELULA / 2 - centro_x
         dy = jogador.y + TAMANHO_CELULA / 2 - centro_y
         if dx * dx + dy * dy <= (2 * TAMANHO_CELULA) ** 2:
-            mundo.porta_ativada = True
-        if mundo.porta_ativada:
             mundo.abertura_porta = min(1.0, mundo.abertura_porta + dt * 2.5)
+        else:
+            mundo.abertura_porta = max(0.0, mundo.abertura_porta - dt * 2.5)
 
 
 def _desenhar_porta(tela, x, y, abertura):
@@ -135,7 +135,7 @@ def obter_bau_proximo(mundo, jogador):
     jx, jy = jogador.grade_x, jogador.grade_y
     for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)):
         bx, by = jx + dx, jy + dy
-        if (bx, by) in mundo.baus:
+        if (bx, by) in mundo.baus and mundo.grade[by][bx] == BAU_FECHADO:
             return (bx, by)
     return None
 
