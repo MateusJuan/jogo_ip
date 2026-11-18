@@ -4,6 +4,10 @@ from jogo.configuracoes import TAMANHO_CELULA, VELOCIDADE
 from jogo.mapa import identificando_buraco, pode_andar
 
 
+FPS_CAMINHADA = 18
+MULTIPLICADOR_VELOCIDADE = 1.2
+
+
 class Jogador:
     # representa o personagem controlado pelo jogador, sua posição, vida e cronômetros.
     def __init__(
@@ -103,6 +107,7 @@ class Jogador:
         # atualiza o deslize do personagem quadro a quadro usando 'dt' (tempo decorrido).
         self.movendo_neste_quadro = False
         restante = dt
+        velocidade = VELOCIDADE * MULTIPLICADOR_VELOCIDADE
         # variável booleana de controle para encerrar o while sem usar 'break' ou 'continue'.
         continuar_loop = True
 
@@ -128,13 +133,13 @@ class Jogador:
                     self._chegar(mundo)
                 else:
                     self.movendo_neste_quadro = True
-                    passo = VELOCIDADE * restante
+                    passo = velocidade * restante
                     if distancia <= passo:
                         # alcançou ou ultrapassou o centro da célula de destino neste quadro.
                         self.x = float(alvo_x)
                         self.y = float(alvo_y)
                         self._chegar(mundo)
-                        restante -= distancia / VELOCIDADE
+                        restante -= distancia / velocidade
                     else:
                         # ainda está no meio do caminho: avança proporcionalmente.
                         proporcao = passo / distancia
@@ -171,17 +176,17 @@ class Jogador:
             
             # 1. Desenha o personagem 
             imagem = self.imagem if self.direcao_lateral == 1 else self.imagem_esquerda
-            if self.movendo_neste_quadro and self.direcao_olhar == (0, -1):
-                quadros = self.caminhada_costas
-                imagem = quadros[int(self.tempo_animacao * 10) % len(quadros)]
-            elif self.movendo_neste_quadro and self.direcao_olhar[0] != 0:
-                quadros = self.caminhada_direita
-                if self.direcao_olhar == (-1, 0):
+            if self.movendo_neste_quadro:
+                if self.direcao_olhar == (0, -1):
+                    quadros = self.caminhada_costas
+                elif self.direcao_lateral == -1:
                     quadros = self.caminhada_esquerda
-                imagem = quadros[int(self.tempo_animacao * 10) % len(quadros)]
+                else:
+                    quadros = self.caminhada_direita
+                imagem = quadros[int(self.tempo_animacao * FPS_CAMINHADA) % len(quadros)]
             elif self.direcao_olhar == (0, -1):
                 imagem = self.imagem_costas
-            elif not self.movendo_neste_quadro:
+            else:
                 quadros = self.respiracao_direita
                 if self.direcao_lateral == -1:
                     quadros = self.respiracao_esquerda
@@ -297,7 +302,3 @@ class Jogador:
                 # Supondo que o inimigo possua um método levar_dano ou similar
                 if hasattr(inimigo, 'levar_dano'):
                     inimigo.levar_dano(1.0) # Aplica 1 de dano ao inimigo """
-
-        
-    
-    
