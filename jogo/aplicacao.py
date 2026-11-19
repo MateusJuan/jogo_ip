@@ -1,7 +1,8 @@
 import pygame
 
 from jogo.configuracoes import (
-    ALTURA, FPS, LARGURA, SLOTS_INVENTARIO, TAMANHO_CELULA, TAMANHO_MAPA, TITULO, ZOOM_CAMERA,
+    ALTURA, FPS, LARGURA, PASTA_ASSETS, SLOTS_INVENTARIO,
+    TAMANHO_CELULA, TAMANHO_MAPA, TITULO, ZOOM_CAMERA,
 )
 from jogo.jogador import Jogador
 from jogo.mundos import criar_mundos
@@ -65,6 +66,11 @@ class Aplicacao:
         )
 
     def executar(self):
+        if pygame.mixer.get_init():
+            pygame.mixer.music.load(PASTA_ASSETS + "/trilha_sonora.mp3")
+            pygame.mixer.music.set_volume(0.4)
+            pygame.mixer.music.play(loops=-1)
+
         # loop principal do jogo: processa eventos, atualiza a lógica e redesenha a tela a cada quadro.
         while self.rodando:
             # o dt (delta time) mede o tempo em segundos desde o último quadro (limitado a 0.05s).
