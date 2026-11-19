@@ -15,11 +15,12 @@ from jogo.blocos import (
 )
 from jogo.configuracoes import TAMANHO_MAPA
 from jogo.inimigos import inimigos
+from jogo.plataformas import Plataforma
 
 
 class Mundo:
     # representa um andar do castelo com identificador, nome, matriz de blocos e escadas.
-    def __init__(self, ident, nome, grade, escadas, baus=None, inimigos=None):
+    def __init__(self, ident, nome, grade, escadas, baus=None, inimigos=None, plataformas = None):
         self.ident = ident
         self.nome = nome
         self.grade = grade
@@ -27,6 +28,7 @@ class Mundo:
         self.baus = baus or {} #depois colcoar a espada dentro do bau da entrada da masmorra
         self.abertura_porta = 0.0
         self.inimigos = inimigos or [] # lista de inimigos presentes neste mundo 
+        self.plataformas = plataformas or []
 
 
 def criar_mundos():
@@ -95,19 +97,20 @@ def _escada(lado, destino, x, y, sobe, trancada=None):
 
 
 def _criar_lobby():
-    # Entrada fechada com percurso em S entre dois abismos.
+    # entrada fechada com abismo central atravessado por tres plataformas moveis.
     grade = _grade(GALERIA_BURACO)
     _borda(grade, GALERIA_PAREDE)
     _preencher(grade, 7, 12, 9, 15, GALERIA_CHAO)
-    _preencher(grade, 4, 10, 9, 12, GALERIA_CHAO)
-    _preencher(grade, 4, 6, 6, 12, GALERIA_CHAO)
-    _preencher(grade, 4, 5, 10, 7, GALERIA_CHAO)
-    _preencher(grade, 8, 1, 10, 6, GALERIA_CHAO)
     _preencher(grade, 6, 1, 12, 3, GALERIA_CHAO)
     grade[2][11] = BAU_FECHADO
     baus = {(11, 2): ["Espada"]}
     escadas = _escada("norte", "salao", 8, 15, True)
-    return Mundo("lobby", "Entrada da Masmorra", grade, escadas, baus)
+    plataformas = [
+        Plataforma(2, 10, 3, 2, 2, 12, 1, 0.55),
+        Plataforma(12, 7, 3, 3, 2, 12, -1, 0.35),
+        Plataforma(2, 4, 3, 3, 2, 12, 1, 0.20),
+    ]
+    return Mundo("lobby", "Entrada da Masmorra", grade, escadas, baus, plataformas=plataformas)
 
 
 def _criar_salao():

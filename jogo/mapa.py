@@ -42,6 +42,13 @@ def desenhar_mapa(tela, mundo, imagens):
     lobby = mundo.ident == "lobby"
     if lobby:
         desenhar_entrada(tela, tuple(tuple(linha) for linha in mundo.grade))
+        # copia um bloco do proprio chao do lobby para manter o mesmo visual nas balsas.
+        bloco_lobby = tela.subsurface(
+            (8 * TAMANHO_CELULA, 14 * TAMANHO_CELULA, TAMANHO_CELULA, TAMANHO_CELULA)
+        ).copy()
+        for plataforma in mundo.plataformas:
+            plataforma.desenhar(tela, bloco_lobby)
+
     for y, linha in enumerate(mundo.grade):
         for x, bloco in enumerate(linha):
             if not lobby:
@@ -95,6 +102,13 @@ def identificando_buraco(mundo, x, y):
     # retorna true se a célula (x, y) for um buraco no chão.
     if x < 0 or y < 0 or x >= TAMANHO_MAPA or y >= TAMANHO_MAPA:
         return False
+
+# verifica primeiro se alguma plataforma esta cobrindo esta celula.
+    for plataforma in mundo.plataformas:
+        if plataforma.contem(x, y):
+            return False
+
+    # caso contrario, verifica se o bloco fixo da matriz e um buraco.
     return mundo.grade[y][x] in BURACOS
 
 
