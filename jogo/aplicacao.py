@@ -1,4 +1,7 @@
 import pygame
+import random
+from .blocos import SOLIDOS
+from jogo.mapa import atualizar_porta, desenhar_mapa, obter_bau_proximo, desenhar_inimigos
 
 from jogo.configuracoes import (
     ALTURA, FPS, LARGURA, PASTA_ASSETS, SLOTS_INVENTARIO,
@@ -79,6 +82,7 @@ class Aplicacao:
             self._eventos()
             if not (self.vitoria or self.jogador.game_over or self._tutorial_visivel()
                     or self.inventario_aberto):
+            if not self.jogador.game_over and not self._tutorial_visivel() and not self.inventario_aberto:
                 atualizar_porta(self.mundo, self.jogador, dt)
                 self.jogador.atualizar(
                     dt, pygame.key.get_pressed(), self.mundo, self.historico_teclas
@@ -153,6 +157,9 @@ class Aplicacao:
                         self.vitoria = True
                     else:
                         self._interagir_bau()
+
+                elif evento.key == pygame.K_SPACE:
+                    self.jogador.ataque(self.mundo.inimigos)
 
                 elif evento.key == pygame.K_SPACE:
                     self.jogador.ataque(self.mundo.inimigos)
@@ -311,6 +318,12 @@ class Aplicacao:
         for fonte, mensagem, cor, y in linhas:
             texto = renderizar_texto(fonte, mensagem, cor)
             self.tela.blit(texto, texto.get_rect(center=(centro, y)))
+        if obter_bau_proximo(self.mundo, self.jogador):
+            texto = renderizar_texto(self.fonte, "[F] Abrir baú", (255, 224, 148))
+            fundo = texto.get_rect(center=(LARGURA // 2, ALTURA - 82)).inflate(28, 16)
+            pygame.draw.rect(self.tela, (24, 23, 29), fundo)
+            pygame.draw.rect(self.tela, (155, 120, 66), fundo, 2)
+            self.tela.blit(texto, texto.get_rect(center=fundo.center))
 
     def _desenhar_tutorial(self):
         # Pausa a exploracao enquanto o jogador le as instrucoes da entrada.
@@ -517,3 +530,25 @@ class Aplicacao:
             superficie = renderizar_texto(self.fonte_opcao, rotulo, cor)
             retangulo = superficie.get_rect(center=(LARGURA // 2, ALTURA // 2 + 15 + indice * 44))
             self.tela.blit(superficie, retangulo)
+            
+def atualizar_inimigos(mundo):
+    if not hasattr(mundo, "inimigos"):
+        return
+        
+    for inimigo in mundo.inimigos:
+        inimigo["tempo"] += 1
+        # A cada ~60 frames (1 segundo), o inimigo tenta mover-se
+        if inimigo["tempo"] > 60:
+            inimigo["tempo"] = 0
+            # Escolhe uma direção aleatória (cima, baixo, esquerda, direita)
+            direcoes = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+            dx, dy = random.choice(direcoes)
+            
+            novo_x = inimigo["x"] + dx
+            novo_y = inimigo["y"] + dy
+            
+            # Verifica se a célula de destino é caminhável (não é parede nem entulho)
+            if 0 <= novo_x < TAMANHO_MAPA and 0 <= novo_y < TAMANHO_MAPA:
+                if mundo.grade[novo_y][novo_x] not in SOLIDOS:
+                    inimigo["x"] = novo_x
+                    inimigo["y"] = novo_y

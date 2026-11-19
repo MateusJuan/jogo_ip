@@ -60,6 +60,35 @@ class Jogador:
         # lista que guarda as últimas células seguras pisadas (para voltar antes da beirada).
         self.passos_seguros = [(grade_x, grade_y)]
         self.game_over = False
+        
+        # Inventário da Masmorra (5 itens)
+        self.tem_espada = False
+        self.tem_arco = False
+        self.tem_chave_prata = False
+        self.tem_chave_dourada = False
+        self.tem_cajado = False
+
+        self.inventario = []
+        self.slot_selecionado = 0
+
+        self.tempo_cooldown_ataque = 0.0  # Tempo restante para o próximo ataque
+        self.duracao_cooldown = 0.24     # Intervalo em segundos entre os ataques
+        self.atacando = False             # Flag para indicar se está executando o ataque
+
+        # --- IMAGENS DE ATAQUE BLINDADAS ---
+        def _garantir_lista(val, padrao):
+            if val is None:
+                return [padrao]
+            if isinstance(val, list):
+                if len(val) > 0 and isinstance(val[0], list):
+                    return val[0]
+                return val
+            return [val]
+
+        self.ataque_direita = _garantir_lista(ataque_direita, imagem)
+        self.ataque_esquerda = _garantir_lista(ataque_esquerda, self.imagem_esquerda)
+        self.ataque_costas = _garantir_lista(ataque_costas, imagem_costas)
+        self.tempo_animacao_ataque = 0.0
 
         self.inventario = []
         self.slot_selecionado = 0
@@ -255,7 +284,9 @@ class Jogador:
 
         proximo_x = self.grade_x + dx
         proximo_y = self.grade_y + dy
-        if not pode_andar(mundo, proximo_x, proximo_y):
+        
+        # Passamos 'self' para a função pode_andar verificar o inventário (chaves)
+        if not pode_andar(mundo, proximo_x, proximo_y, self):
             self.movendo_neste_quadro = False
             return False
 
