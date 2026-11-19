@@ -5,6 +5,10 @@ from jogo.configuracoes import TAMANHO_CELULA, TAMANHO_MAPA
 from jogo.entrada import desenhar_entrada
 
 
+def _espinhos_ativos(mundo):
+    return mundo.ident == "salao" and any(not inimigo.morto for inimigo in mundo.inimigos)
+
+
 def pode_andar(mundo, x, y, jogador=None):
     # verifica se a célula (x, y) está dentro do mapa e não é um obstáculo sólido.
     # impede sair dos limites da matriz 17x17.
@@ -24,8 +28,7 @@ def pode_andar(mundo, x, y, jogador=None):
             if jogador is None or not jogador.tem_chave_prata:
                 return False
         elif tranca == "espinhos":
-            # Se ainda houver inimigos vivos no Salão Central, os espinhos continuam fechados!
-            if mundo.ident == "salao" and getattr(mundo, "inimigos", []):
+            if _espinhos_ativos(mundo):
                 return False
             
         return mundo.ident != "lobby" or mundo.abertura_porta >= 1.0
@@ -49,7 +52,11 @@ def desenhar_mapa(tela, mundo, imagens):
             elif bloco == BAU_ABERTO:
                 _desenhar_bau_aberto(tela, x, y)
 
-    # desenha as escadas por cima do piso nas posições cadastradas no mundo.
+    if lobby:
+        _desenhar_porta(tela, mundo.abertura_porta)
+        return
+
+    # Cada célula exibe a tranca ou os degraus da passagem.
     for (x, y), escada in mundo.escadas.items():
         tranca = escada.get("trancada")
         
@@ -57,12 +64,9 @@ def desenhar_mapa(tela, mundo, imagens):
             _desenhar_fechadura(tela, x, y, (243, 211, 114))  # Dourado
         elif tranca == "prata":
             _desenhar_fechadura(tela, x, y, (192, 192, 192))  # Prateado
-        elif tranca == "espinhos":
+        elif tranca == "espinhos" and _espinhos_ativos(mundo):
             _desenhar_espinhos(tela, x, y)
-    if lobby:
-        _desenhar_porta(tela, mundo.abertura_porta)
-    else:
-        for (x, y), escada in mundo.escadas.items():
+        else:
             _desenhar_escada(tela, x, y, escada["sobe"])
 
 def _desenhar_escada(tela, x, y, sobe):
