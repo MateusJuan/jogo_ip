@@ -131,7 +131,17 @@ def _criar_salao():
     # Porta Oeste: Bloqueada por espinhos de combate
     escadas.update(_escada("oeste", "ala_oeste", 15, 8, True, trancada="espinhos"))
 
-    return Mundo("salao", "Andar 1 - Salão Central", grade, escadas)
+    mundo =  Mundo("salao", "Andar 1 - Salão Central", grade, escadas)
+
+    # 4 Inimigos dentro do Salão com posições e direções de patrulha/movimento
+    mundo.inimigos = [
+        {"x": 6, "y": 6, "dx": 0, "dy": 1, "tempo": 0},
+        {"x": 10, "y": 6, "dx": 1, "dy": 0, "tempo": 0},
+        {"x": 6, "y": 10, "dx": -1, "dy": 0, "tempo": 0},
+        {"x": 10, "y": 10, "dx": 0, "dy": -1, "tempo": 0}
+    ]
+    
+    return mundo
 
 
 def _criar_galeria():

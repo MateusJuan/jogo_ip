@@ -23,8 +23,9 @@ def pode_andar(mundo, x, y, jogador=None):
             if jogador is None or not jogador.tem_chave_prata:
                 return False
         elif tranca == "espinhos":
-            # Na Parte 1, os espinhos bloqueiam sempre a passagem
-            return False
+            # Se ainda houver inimigos vivos no Salão Central, os espinhos continuam fechados!
+            if mundo.ident == "salao" and getattr(mundo, "inimigos", []):
+                return False
             
         return mundo.ident != "lobby" or mundo.abertura_porta >= 1.0
     
@@ -220,3 +221,12 @@ def _desenhar_espinhos(tela, x, y):
         pygame.draw.polygon(tela, (150, 160, 170), pontos)
         # Linha de reflexo de luz no espinho
         pygame.draw.line(tela, (220, 230, 240), (px + 4, py + offset_y + 4), (px + 22, py + offset_y + 4), 1)
+        
+            
+def desenhar_inimigos(tela, mundo):
+    if hasattr(mundo, "inimigos"):
+        for inimigo in mundo.inimigos:
+            px = inimigo["x"] * TAMANHO_CELULA
+            py = inimigo["y"] * TAMANHO_CELULA
+            # Desenha um quadrado vermelho sólido para cada inimigo
+            pygame.draw.rect(tela, (220, 50, 50), (px + 4, py + 4, TAMANHO_CELULA - 8, TAMANHO_CELULA - 8))

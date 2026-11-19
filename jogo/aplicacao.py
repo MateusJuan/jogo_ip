@@ -1,4 +1,7 @@
 import pygame
+import random
+from .blocos import SOLIDOS
+from jogo.mapa import atualizar_porta, desenhar_mapa, obter_bau_proximo, desenhar_inimigos
 
 from jogo.configuracoes import (
     ALTURA, FPS, LARGURA, TAMANHO_CELULA, TAMANHO_MAPA, TITULO, ZOOM_CAMERA,
@@ -54,6 +57,9 @@ class Aplicacao:
             if not self.jogador.game_over and not self._tutorial_visivel():
                 atualizar_porta(self.mundo, self.jogador, dt)
                 self.jogador.atualizar(dt, pygame.key.get_pressed(), self.mundo)
+                
+                atualizar_inimigos(self.mundo)
+                
                 self._verificar_escada()
             self._desenhar()
             if self.tempo_mensage > 0 and not self._tutorial_visivel():
@@ -135,6 +141,9 @@ class Aplicacao:
         # limpa a tela e desenha todas as camadas na ordem: mapa, jogador e interface (hud).
         self.cena.fill((0, 0, 0))
         desenhar_mapa(self.cena, self.mundo, self.imagens)
+        
+        desenhar_inimigos(self.cena, self.mundo)
+        
         self.jogador.desenhar(self.cena)
 
         # acompanha o centro do personagem e limita a camera nas bordas do mapa.
@@ -330,3 +339,25 @@ class Aplicacao:
             superficie = renderizar_texto(self.fonte_opcao, rotulo, cor)
             retangulo = superficie.get_rect(center=(LARGURA // 2, ALTURA // 2 + 15 + indice * 44))
             self.tela.blit(superficie, retangulo)
+            
+def atualizar_inimigos(mundo):
+    if not hasattr(mundo, "inimigos"):
+        return
+        
+    for inimigo in mundo.inimigos:
+        inimigo["tempo"] += 1
+        # A cada ~60 frames (1 segundo), o inimigo tenta mover-se
+        if inimigo["tempo"] > 60:
+            inimigo["tempo"] = 0
+            # Escolhe uma direção aleatória (cima, baixo, esquerda, direita)
+            direcoes = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+            dx, dy = random.choice(direcoes)
+            
+            novo_x = inimigo["x"] + dx
+            novo_y = inimigo["y"] + dy
+            
+            # Verifica se a célula de destino é caminhável (não é parede nem entulho)
+            if 0 <= novo_x < TAMANHO_MAPA and 0 <= novo_y < TAMANHO_MAPA:
+                if mundo.grade[novo_y][novo_x] not in SOLIDOS:
+                    inimigo["x"] = novo_x
+                    inimigo["y"] = novo_y
