@@ -82,10 +82,15 @@ class Aplicacao:
             self._eventos()
             if not (self.vitoria or self.jogador.game_over or self._tutorial_visivel()
                     or self.inventario_aberto):
-                atualizar_porta(self.mundo, self.jogador, dt)
+                # atualiza as plataformas moveis antes do jogador para sincronizar a carona.
+                for plataforma in self.mundo.plataformas:
+                    plataforma.atualizar(dt, self.jogador)
+
                 self.jogador.atualizar(
                     dt, pygame.key.get_pressed(), self.mundo, self.historico_teclas
                 )
+                atualizar_porta(self.mundo, self.jogador, dt)
+
                 for inimigo in self.mundo.inimigos:
                     inimigo.atualizar(dt, self.mundo)
                     if not inimigo.morto and (inimigo.grade_x, inimigo.grade_y) == (self.jogador.grade_x, self.jogador.grade_y):
