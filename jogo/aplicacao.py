@@ -72,7 +72,7 @@ class Aplicacao:
     def executar(self):
         if pygame.mixer.get_init():
             pygame.mixer.music.load(PASTA_ASSETS + "/trilha_sonora.mp3")
-            pygame.mixer.music.set_volume(0.4)
+            pygame.mixer.music.set_volume(0.5)
             pygame.mixer.music.play(loops=-1)
 
         # loop principal do jogo: processa eventos, atualiza a lógica e redesenha a tela a cada quadro.
