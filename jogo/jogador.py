@@ -23,7 +23,7 @@ class Jogador:
     # representa o personagem controlado pelo jogador, sua posição, vida e cronômetros.
     def __init__(
         self, grade_x, grade_y, imagem, imagem_costas, caminhada_direita,
-        caminhada_esquerda, caminhada_costas, respiracao_direita, respiracao_esquerda,
+        caminhada_esquerda, caminhada_costas, caminhada_frente, respiracao_direita, respiracao_esquerda,
         ataque_direita=None, ataque_esquerda=None, ataque_costas=None
     ):
         # posição lógica na matriz (0 a 16).
@@ -33,6 +33,7 @@ class Jogador:
         self.imagem_esquerda = pygame.transform.flip(imagem, True, False)
         self.imagem_costas = imagem_costas
         self.caminhada_costas = caminhada_costas
+        self.caminhada_frente = caminhada_frente
         self.caminhada_direita = caminhada_direita
         self.caminhada_esquerda = caminhada_esquerda
         self.tempo_animacao = 0.0
@@ -183,6 +184,8 @@ class Jogador:
             if self.movendo_neste_quadro:
                 if self.direcao_olhar == (0, -1):
                     quadros = self.caminhada_costas
+                elif self.direcao_olhar == (0, 1):
+                    quadros = self.caminhada_frente
                 elif self.direcao_lateral == -1:
                     quadros = self.caminhada_esquerda
                 else:
