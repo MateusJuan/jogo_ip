@@ -1,7 +1,6 @@
 import pygame
 import random
 from .blocos import SOLIDOS
-from jogo.mapa import atualizar_porta, desenhar_mapa, obter_bau_proximo, desenhar_inimigos
 
 from jogo.configuracoes import (
     ALTURA, FPS, LARGURA, PASTA_ASSETS, SLOTS_INVENTARIO,
@@ -236,7 +235,7 @@ class Aplicacao:
         self.cena.fill((0, 0, 0))
         desenhar_mapa(self.cena, self.mundo, self.imagens)
         for inimigo in self.mundo.inimigos:
-            inimigo.desenhar(self.cena)
+            inimigo.desenhar(self.cena, self.imagens["esqueleto"])
         self.jogador.desenhar(self.cena)
 
         # acompanha o centro do personagem e limita a camera nas bordas do mapa.
@@ -250,6 +249,7 @@ class Aplicacao:
         )
         self._desenhar_nome()
         self._desenhar_vida()
+        self._desenhar_contador_inimigos()
         self._desenhar_inventario()
         self._desenhar_mensagem_bau()
         if not self.jogador.game_over:
@@ -419,6 +419,15 @@ class Aplicacao:
         fundo = texto.get_rect(topright=(LARGURA - 8, 8)).inflate(12, 8)
         pygame.draw.rect(self.tela, (0, 0, 0), fundo)
         self.tela.blit(texto, texto.get_rect(center=fundo.center))
+
+    def _desenhar_contador_inimigos(self):
+        if self.mundo.inimigos:
+            restantes = sum(not inimigo.morto for inimigo in self.mundo.inimigos)
+            contador = renderizar_texto(self.fonte, f"Inimigos restantes: {restantes}", (238, 222, 182))
+            painel = contador.get_rect().inflate(12, 8)
+            painel.topleft = (12, 50)
+            pygame.draw.rect(self.tela, (0, 0, 0), painel)
+            self.tela.blit(contador, contador.get_rect(center=painel.center))
 
     def _desenhar_vida(self):
         # Cada caractere representa um pixel de 3x3, sem suavizacao.
