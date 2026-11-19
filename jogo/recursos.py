@@ -50,6 +50,9 @@ def carregar_imagens():
     caminhada_direita = _carregar_animacao_piskel(
         "movimento_jogador/corrida_direita.png", 3, 4
     )
+    caminhada_direita = _carregar_animacao_piskel(
+        "movimento_jogador/corrida_direita.png", 3, 4
+    )
     
     # Carrega a espada base (apontando para a direita) caso utilize
     espada_base = _carregar_espada("espada.png")
