@@ -82,7 +82,6 @@ class Aplicacao:
             self._eventos()
             if not (self.vitoria or self.jogador.game_over or self._tutorial_visivel()
                     or self.inventario_aberto):
-            if not self.jogador.game_over and not self._tutorial_visivel() and not self.inventario_aberto:
                 atualizar_porta(self.mundo, self.jogador, dt)
                 self.jogador.atualizar(
                     dt, pygame.key.get_pressed(), self.mundo, self.historico_teclas
