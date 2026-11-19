@@ -49,6 +49,7 @@ class Aplicacao:
         self.fonte_tutorial_destaque = carregar_fonte(20, negrito=True)
         self.fonte_tutorial_titulo = carregar_fonte(28, negrito=True)
         self.tutorial_aberto = False
+        self.inventario_aberto = False
         self.historico_teclas = []
 
     def _criar_jogador(self):
@@ -69,7 +70,7 @@ class Aplicacao:
             # o dt (delta time) mede o tempo em segundos desde o último quadro (limitado a 0.05s).
             dt = min(self.clock.tick(FPS) / 1000.0, 0.05)
             self._eventos()
-            if not self.jogador.game_over and not self._tutorial_visivel():
+            if not self.jogador.game_over and not self._tutorial_visivel() and not self.inventario_aberto:
                 atualizar_porta(self.mundo, self.jogador, dt)
                 self.jogador.atualizar(
                     dt, pygame.key.get_pressed(), self.mundo, self.historico_teclas
@@ -81,7 +82,7 @@ class Aplicacao:
 
                 self._verificar_escada()
             self._desenhar()
-            if self.tempo_mensage > 0 and not self._tutorial_visivel():
+            if self.tempo_mensage > 0 and not self._tutorial_visivel() and not self.inventario_aberto:
                 self.tempo_mensage -= dt
                 if self.tempo_mensage <= 0:
                     self.mensagem_bau = ""
@@ -109,14 +110,29 @@ class Aplicacao:
                         self._reiniciar()
                     else:
                         self.rodando = False
+            elif evento.type == pygame.MOUSEWHEEL:
+                if not self.jogador.game_over and not self._tutorial_visivel():
+                    self.jogador.slot_selecionado = (
+                        self.jogador.slot_selecionado - evento.y
+                    ) % SLOTS_INVENTARIO
             elif evento.type == pygame.KEYDOWN:
 
-                if evento.key == pygame.K_h and self.mundo.ident == "lobby":
+                if evento.key == pygame.K_h and self.mundo.ident == "lobby" and not self.inventario_aberto:
                     self.tutorial_aberto = not self.tutorial_aberto
 
                 elif self._tutorial_visivel():
                     if evento.key in (pygame.K_RETURN, pygame.K_ESCAPE):
                         self.tutorial_aberto = False
+
+                elif evento.key == pygame.K_e:
+                    self.inventario_aberto = not self.inventario_aberto
+
+                elif pygame.K_1 <= evento.key < pygame.K_1 + SLOTS_INVENTARIO:
+                    self.jogador.slot_selecionado = evento.key - pygame.K_1
+
+                elif self.inventario_aberto:
+                    if evento.key == pygame.K_ESCAPE:
+                        self.inventario_aberto = False
 
                 elif evento.key == pygame.K_f:
                     self._interagir_bau()
@@ -169,6 +185,7 @@ class Aplicacao:
         self.tempo_mensage = 0.0
         self.opcao_game_over = 0
         self.tutorial_aberto = False
+        self.inventario_aberto = False
         self.historico_teclas.clear()
 
     def _desenhar(self):
@@ -195,6 +212,8 @@ class Aplicacao:
         if not self.jogador.game_over:
             if self._tutorial_visivel():
                 self._desenhar_tutorial()
+            elif self.inventario_aberto:
+                self._desenhar_inventario_expandido()
             else:
                 self._desenhar_ajuda()
                 self._desenhar_dica_bau()
@@ -271,7 +290,11 @@ class Aplicacao:
             )),
             ("ESPAÇO", "Ataque com a espada", (
                 "Pegue a espada no baú da entrada.",
-                "Depois, pressione Espaço para atacar.",
+                "Com a espada selecionada, use Espaço.",
+            )),
+            ("E", "Abra o inventário", (
+                "E abre e fecha o inventário ampliado.",
+                "Use 1 a 5 ou a roda do mouse para selecionar.",
             )),
             ("SAÍDA", "Avance pela masmorra", (
                 "Siga o caminho até o portão ao norte.",
@@ -279,7 +302,7 @@ class Aplicacao:
             )),
         )
         for indice, (tecla, assunto, linhas) in enumerate(instrucoes):
-            topo = y + 112 + indice * 76
+            topo = y + 110 + indice * 66
             selo = pygame.Rect(x, topo + 4, 72, 32)
             pygame.draw.rect(self.tela, (47, 48, 44), selo)
             pygame.draw.rect(self.tela, (115, 103, 74), selo, 2)
@@ -289,7 +312,7 @@ class Aplicacao:
             self.tela.blit(destaque, (x + 88, topo))
             for numero, linha in enumerate(linhas):
                 texto = renderizar_texto(self.fonte_tutorial, linha, (198, 197, 178))
-                self.tela.blit(texto, (x + 88, topo + 28 + numero * 24))
+                self.tela.blit(texto, (x + 88, topo + 23 + numero * 20))
 
         pygame.draw.line(self.tela, (107, 96, 68), (x, y + 580), (painel.right - 24, y + 580), 2)
         botao = pygame.Rect(x, y + 600, 280, 44)
@@ -347,19 +370,48 @@ class Aplicacao:
 
     def _desenhar_inventario(self):
         tamanho = 40
-        passo = tamanho + 4
-        largura = SLOTS_INVENTARIO * passo - 4
-        x = LARGURA - 12 - largura
+        largura = SLOTS_INVENTARIO * (tamanho + 4) - 4
+        self._desenhar_slots(LARGURA - 12 - largura, 46, tamanho, 4)
+
+    def _desenhar_inventario_expandido(self):
+        painel = self.tela.get_rect().inflate(-32, -32)
+        pygame.draw.rect(self.tela, (24, 23, 29), painel)
+        pygame.draw.rect(self.tela, (152, 126, 77), painel, 3)
+
+        titulo = renderizar_texto(self.fonte_titulo, "Inventário", (248, 238, 216))
+        self.tela.blit(titulo, titulo.get_rect(center=(painel.centerx, painel.top + 90)))
+        tamanho = 96
+        espaco = 14
+        largura = SLOTS_INVENTARIO * (tamanho + espaco) - espaco
+        self._desenhar_slots(painel.centerx - largura // 2, painel.centery - tamanho // 2,
+                             tamanho, espaco, expandido=True)
+        item = self.jogador.item_selecionado or "Slot vazio"
+        nome = renderizar_texto(self.fonte_opcao, item, (248, 238, 216))
+        self.tela.blit(nome, nome.get_rect(center=(painel.centerx, painel.centery + 90)))
+        ajuda = renderizar_texto(
+            self.fonte, "[E] / [Esc] Fechar    [1 a 5] / Roda do mouse Selecionar", (238, 215, 165)
+        )
+        self.tela.blit(ajuda, ajuda.get_rect(center=(painel.centerx, painel.bottom - 50)))
+
+    def _desenhar_slots(self, x, y, tamanho, espaco, expandido=False):
         for indice in range(SLOTS_INVENTARIO):
-            slot = pygame.Rect(x + indice * passo, 46, tamanho, tamanho)
-            pygame.draw.rect(self.tela, (24, 23, 29), slot)
-            pygame.draw.rect(self.tela, (111, 96, 65), slot, 2)
+            slot = pygame.Rect(x + indice * (tamanho + espaco), y, tamanho, tamanho)
+            selecionado = indice == self.jogador.slot_selecionado
+            fundo = (54, 45, 32) if selecionado else (32, 31, 37)
+            borda = (248, 216, 151) if selecionado else (111, 96, 65)
+            pygame.draw.rect(self.tela, fundo, slot)
+            pygame.draw.rect(self.tela, borda, slot, 3 if selecionado else 2)
             if indice < len(self.jogador.inventario):
                 item = self.jogador.inventario[indice]
                 icone = self.icones_inventario.get(item)
                 if icone is None:
                     icone = renderizar_texto(self.fonte, item[:1], (238, 215, 165))
+                elif expandido:
+                    icone = pygame.transform.scale(icone, (56, 56))
                 self.tela.blit(icone, icone.get_rect(center=slot.center))
+            if expandido:
+                numero = renderizar_texto(self.fonte, str(indice + 1), borda)
+                self.tela.blit(numero, (slot.x + 8, slot.y + 4))
 
     def _desenhar_mensagem_bau(self):
         if not self.mensagem_bau:
