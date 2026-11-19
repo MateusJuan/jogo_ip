@@ -57,8 +57,6 @@ def desenhar_mapa(tela, mundo, imagens):
             _desenhar_fechadura(tela, x, y, (192, 192, 192))  # Prateado
         elif tranca == "espinhos":
             _desenhar_espinhos(tela, x, y)
-        elif mundo.ident == "lobby":
-            _desenhar_porta(tela, x, y, mundo.abertura_porta)
     if lobby:
         _desenhar_porta(tela, mundo.abertura_porta)
     else:
