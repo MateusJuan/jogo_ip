@@ -1,12 +1,16 @@
 import pygame
+import random
+from .blocos import SOLIDOS
+from jogo.mapa import atualizar_porta, desenhar_mapa, obter_bau_proximo, desenhar_inimigos
 
 from jogo.configuracoes import (
-    ALTURA, FPS, LARGURA, SLOTS_INVENTARIO, TAMANHO_CELULA, TAMANHO_MAPA, TITULO, ZOOM_CAMERA,
+    ALTURA, FPS, LARGURA, PASTA_ASSETS, SLOTS_INVENTARIO,
+    TAMANHO_CELULA, TAMANHO_MAPA, TITULO, ZOOM_CAMERA,
 )
 from jogo.jogador import Jogador
 from jogo.mundos import criar_mundos
 from jogo.recursos import carregar_imagens
-from jogo.blocos import BAU_ABERTO
+from jogo.blocos import BAU_ABERTO, TORRE_ALTAR
 from jogo.mapa import atualizar_porta, desenhar_mapa, obter_bau_proximo
 from jogo.textos import carregar_fonte, renderizar_texto
 from jogo.inimigos import inimigos
@@ -39,6 +43,7 @@ class Aplicacao:
         self.mundo = self.mundos["lobby"]
         self.jogador = self._criar_jogador()
         self.rodando = True
+        self.vitoria = False
         self.mensagem_bau = ""
         self.tempo_mensage = 0.0
         self.opcao_game_over = 0
@@ -65,12 +70,18 @@ class Aplicacao:
         )
 
     def executar(self):
+        if pygame.mixer.get_init():
+            pygame.mixer.music.load(PASTA_ASSETS + "/trilha_sonora.mp3")
+            pygame.mixer.music.set_volume(0.5)
+            pygame.mixer.music.play(loops=-1)
+
         # loop principal do jogo: processa eventos, atualiza a lógica e redesenha a tela a cada quadro.
         while self.rodando:
             # o dt (delta time) mede o tempo em segundos desde o último quadro (limitado a 0.05s).
             dt = min(self.clock.tick(FPS) / 1000.0, 0.05)
             self._eventos()
-            if not self.jogador.game_over and not self._tutorial_visivel() and not self.inventario_aberto:
+            if not (self.vitoria or self.jogador.game_over or self._tutorial_visivel()
+                    or self.inventario_aberto):
                 atualizar_porta(self.mundo, self.jogador, dt)
                 self.jogador.atualizar(
                     dt, pygame.key.get_pressed(), self.mundo, self.historico_teclas
@@ -101,6 +112,12 @@ class Aplicacao:
 
             if evento.type == pygame.QUIT:
                 self.rodando = False
+            elif self.vitoria:
+                if evento.type == pygame.KEYDOWN:
+                    if evento.key == pygame.K_RETURN:
+                        self._reiniciar()
+                    elif evento.key == pygame.K_ESCAPE:
+                        self.rodando = False
             elif evento.type == pygame.KEYDOWN and self.jogador.game_over:
                 if evento.key in (pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s):
                     # alterna entre 0 (restart) e 1 (quit).
@@ -135,13 +152,30 @@ class Aplicacao:
                         self.inventario_aberto = False
 
                 elif evento.key == pygame.K_f:
-                    self._interagir_bau()
+                    if self._perto_do_altar():
+                        self.vitoria = True
+                    else:
+                        self._interagir_bau()
+
+                elif evento.key == pygame.K_SPACE:
+                    self.jogador.ataque(self.mundo.inimigos)
 
                 elif evento.key == pygame.K_SPACE:
                     self.jogador.ataque(self.mundo.inimigos)
 
     def _tutorial_visivel(self):
         return self.tutorial_aberto and self.mundo.ident == "lobby" and not self.jogador.game_over
+
+    def _perto_do_altar(self):
+        if self.mundo.ident != "torre" or self.jogador.em_movimento:
+            return False
+        x, y = self.jogador.grade_x, self.jogador.grade_y
+        for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)):
+            coluna, linha = x + dx, y + dy
+            if 0 <= coluna < TAMANHO_MAPA and 0 <= linha < TAMANHO_MAPA:
+                if self.mundo.grade[linha][coluna] == TORRE_ALTAR:
+                    return True
+        return False
 
     def _interagir_bau(self):
         pos_bau = obter_bau_proximo(self.mundo, self.jogador)
@@ -170,9 +204,12 @@ class Aplicacao:
         if posicao not in self.mundo.escadas:
             return
         escada = self.mundo.escadas[posicao]
+        destino = self.mundos.get(escada["destino"])
+        if destino is None:
+            return
         if self.mundo.ident == "lobby":
             self.mundo.abertura_porta = 0.0
-        self.mundo = self.mundos[escada["destino"]]
+        self.mundo = destino
         self.jogador.definir_posicao(escada["x"], escada["y"])
         self.tutorial_aberto = False
 
@@ -181,6 +218,7 @@ class Aplicacao:
         self.mundos = criar_mundos()
         self.mundo = self.mundos["lobby"]
         self.jogador = self._criar_jogador()
+        self.vitoria = False
         self.mensagem_bau = ""
         self.tempo_mensage = 0.0
         self.opcao_game_over = 0
@@ -189,6 +227,11 @@ class Aplicacao:
         self.historico_teclas.clear()
 
     def _desenhar(self):
+        if self.vitoria:
+            self._desenhar_creditos()
+            pygame.display.flip()
+            return
+
         # limpa a tela e desenha todas as camadas na ordem: mapa, jogador e interface (hud).
         self.cena.fill((0, 0, 0))
         desenhar_mapa(self.cena, self.mundo, self.imagens)
@@ -216,7 +259,7 @@ class Aplicacao:
                 self._desenhar_inventario_expandido()
             else:
                 self._desenhar_ajuda()
-                self._desenhar_dica_bau()
+                self._desenhar_dica_interacao()
         if self.jogador.game_over:
             self._desenhar_game_over()
         pygame.display.flip()
@@ -229,9 +272,54 @@ class Aplicacao:
             pygame.draw.rect(self.tela, (111, 96, 65), fundo, 2)
             self.tela.blit(texto, texto.get_rect(center=fundo.center))
 
-    def _desenhar_dica_bau(self):
+    def _desenhar_dica_interacao(self):
         if self.jogador.em_movimento:
             return
+        if self._perto_do_altar():
+            dica = "[F] Ativar altar"
+        elif obter_bau_proximo(self.mundo, self.jogador):
+            dica = "[F] Abrir baú"
+        else:
+            return
+        texto = renderizar_texto(self.fonte, dica, (255, 224, 148))
+        fundo = texto.get_rect(center=(LARGURA // 2, ALTURA - 82)).inflate(28, 16)
+        pygame.draw.rect(self.tela, (24, 23, 29), fundo)
+        pygame.draw.rect(self.tela, (155, 120, 66), fundo, 2)
+        self.tela.blit(texto, texto.get_rect(center=fundo.center))
+
+    def _desenhar_creditos(self):
+        self.tela.fill((17, 17, 22))
+        painel = self.tela.get_rect().inflate(-64, -64)
+        centro = painel.centerx
+        ouro = (224, 183, 108)
+        claro = (248, 238, 216)
+        pygame.draw.rect(self.tela, (28, 27, 32), painel)
+        pygame.draw.rect(self.tela, (115, 96, 66), painel, 2)
+        pygame.draw.rect(self.tela, (60, 53, 48), painel.inflate(-12, -12), 1)
+
+        for y in (224, 546):
+            pygame.draw.line(self.tela, (115, 96, 66), (centro - 200, y), (centro + 200, y), 2)
+            pygame.draw.polygon(self.tela, ouro, (
+                (centro, y - 6), (centro + 6, y), (centro, y + 6), (centro - 6, y),
+            ))
+
+        #add depois as musicas,gráficos,etc
+        linhas = (
+            (self.fonte_titulo, "Vitória!", ouro, 112),
+            (self.fonte, TITULO, claro, 166),
+            (self.fonte_opcao, "Créditos finais", ouro, 266),
+            (self.fonte, "Cadeira: Introdução à Programação", claro, 304),
+            (self.fonte, "Matehus Mesquita", claro, 350),
+            (self.fonte, "Felipe Manoel", claro, 380),
+            (self.fonte, "Karllos Braga", claro, 410),
+            (self.fonte, "Mateus Juan", claro, 440),
+            (self.fonte, "Rodrigo Negreiros", claro, 470),
+            (self.fonte, "Thalisson Matias", claro, 500),
+            (self.fonte, "[Enter] Jogar novamente     [Esc] Sair", ouro, 530),
+        )
+        for fonte, mensagem, cor, y in linhas:
+            texto = renderizar_texto(fonte, mensagem, cor)
+            self.tela.blit(texto, texto.get_rect(center=(centro, y)))
         if obter_bau_proximo(self.mundo, self.jogador):
             texto = renderizar_texto(self.fonte, "[F] Abrir baú", (255, 224, 148))
             fundo = texto.get_rect(center=(LARGURA // 2, ALTURA - 82)).inflate(28, 16)
@@ -444,3 +532,25 @@ class Aplicacao:
             superficie = renderizar_texto(self.fonte_opcao, rotulo, cor)
             retangulo = superficie.get_rect(center=(LARGURA // 2, ALTURA // 2 + 15 + indice * 44))
             self.tela.blit(superficie, retangulo)
+            
+def atualizar_inimigos(mundo):
+    if not hasattr(mundo, "inimigos"):
+        return
+        
+    for inimigo in mundo.inimigos:
+        inimigo["tempo"] += 1
+        # A cada ~60 frames (1 segundo), o inimigo tenta mover-se
+        if inimigo["tempo"] > 60:
+            inimigo["tempo"] = 0
+            # Escolhe uma direção aleatória (cima, baixo, esquerda, direita)
+            direcoes = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+            dx, dy = random.choice(direcoes)
+            
+            novo_x = inimigo["x"] + dx
+            novo_y = inimigo["y"] + dy
+            
+            # Verifica se a célula de destino é caminhável (não é parede nem entulho)
+            if 0 <= novo_x < TAMANHO_MAPA and 0 <= novo_y < TAMANHO_MAPA:
+                if mundo.grade[novo_y][novo_x] not in SOLIDOS:
+                    inimigo["x"] = novo_x
+                    inimigo["y"] = novo_y

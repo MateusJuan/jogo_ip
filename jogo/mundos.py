@@ -66,19 +66,31 @@ def _preencher(grade, x0, y0, x1, y1, bloco):
 
 
 def _celulas_portao(lado):
-    # retorna as 3 coordenadas centrais da parede norte (y=0) ou sul (y=16) para a escada.
+    # retorna as 3 coordenadas centrais da parede norte ou sul
     centro = TAMANHO_MAPA // 2 - 1
     ultima = TAMANHO_MAPA - 1
     if lado == "norte":
         return [(centro + deslocamento, 0) for deslocamento in range(3)]
-    return [(centro + deslocamento, ultima) for deslocamento in range(3)]
+    elif lado == "sul":
+        return [(centro + deslocamento, ultima) for deslocamento in range(3)]
+    elif lado == "leste":
+        return [(ultima, centro + deslocamento) for deslocamento in range(3)]
+    elif lado == "oeste":
+        return [(0, centro + deslocamento) for deslocamento in range(3)]
+    return []
 
 
-def _escada(lado, destino, x, y, sobe):
+def _escada(lado, destino, x, y, sobe, trancada=None):
     # mapeia as 3 células da escada para o andar de destino e a posição onde o jogador nasce.
     resultado = {}
     for celula in _celulas_portao(lado):
-        resultado[celula] = {"destino": destino, "x": x, "y": y, "sobe": sobe}
+        resultado[celula] = {
+            "destino": destino, 
+            "x": x, 
+            "y": y, 
+            "sobe": sobe, 
+            "trancada": trancada
+        }
     return resultado
 
 
@@ -102,14 +114,26 @@ def _criar_salao():
     # andar 1 (salão): sala interna com 4 blocos de entulho e escadas ao sul e ao norte.
     grade = _grade(SALAO_CHAO)
     _borda(grade, SALAO_PAREDE)
+    
+    # Entulho decorativo no salão
     _preencher(grade, 2, 4, 5, 8, SALAO_ENTULHO)
     _preencher(grade, 11, 3, 14, 7, SALAO_ENTULHO)
-    _preencher(grade, 3, 11, 6, 13, SALAO_ENTULHO)
-    _preencher(grade, 10, 10, 13, 13, SALAO_ENTULHO)
+    
     escadas = {}
+    # Porta Sul: Volta para a Sala 1 (Lobby)
     escadas.update(_escada("sul", "lobby", 8, 1, False))
-    escadas.update(_escada("norte", "galeria", 8, 15, True))
-    return Mundo("salao", "Andar 1 - Salão", grade, escadas)
+
+    # Porta Norte: Trancada por fechadura dourada
+    escadas.update(_escada("norte", "torre", 8, 15, True, trancada="dourada"))
+    
+    # Porta Leste: Trancada por fechadura de prata
+    escadas.update(_escada("leste", "ala_leste", 1, 8, True, trancada="prata"))
+    
+    # Porta Oeste: Bloqueada por espinhos de combate
+    escadas.update(_escada("oeste", "ala_oeste", 15, 8, True, trancada="espinhos"))
+
+    lista_inimigos = [inimigos(6, 6), inimigos(10, 6), inimigos(6, 10), inimigos(10, 10)]
+    return Mundo("salao", "Andar 1 - Salão Central", grade, escadas, inimigos=lista_inimigos)
 
 
 def _criar_galeria():

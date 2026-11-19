@@ -5,14 +5,34 @@ from jogo.configuracoes import TAMANHO_CELULA, TAMANHO_MAPA
 from jogo.entrada import desenhar_entrada
 
 
-def pode_andar(mundo, x, y):
+def _espinhos_ativos(mundo):
+    return mundo.ident == "salao" and any(not inimigo.morto for inimigo in mundo.inimigos)
+
+
+def pode_andar(mundo, x, y, jogador=None):
     # verifica se a célula (x, y) está dentro do mapa e não é um obstáculo sólido.
     # impede sair dos limites da matriz 17x17.
+    
     if x < 0 or y < 0 or x >= TAMANHO_MAPA or y >= TAMANHO_MAPA:
         return False
-    # escadas ficam na borda (onde normalmente há parede), mas permitem passagem.
+    
+    # escadas ficam na borda (onde normalmente há parede), mas permitem passagem.    
     if (x, y) in mundo.escadas:
+        escada = mundo.escadas[(x, y)]
+        tranca = escada.get("trancada")
+        
+        if tranca == "dourada":
+            if jogador is None or not jogador.tem_chave_dourada:
+                return False
+        elif tranca == "prata":
+            if jogador is None or not jogador.tem_chave_prata:
+                return False
+        elif tranca == "espinhos":
+            if _espinhos_ativos(mundo):
+                return False
+            
         return mundo.ident != "lobby" or mundo.abertura_porta >= 1.0
+    
     # na matriz usamos [y][x], pois 'y' representa a linha e 'x' a coluna.
     return mundo.grade[y][x] not in SOLIDOS
 
@@ -32,13 +52,22 @@ def desenhar_mapa(tela, mundo, imagens):
             elif bloco == BAU_ABERTO:
                 _desenhar_bau_aberto(tela, x, y)
 
-    # desenha as escadas por cima do piso nas posições cadastradas no mundo.
     if lobby:
         _desenhar_porta(tela, mundo.abertura_porta)
-    else:
-        for (x, y), escada in mundo.escadas.items():
-            _desenhar_escada(tela, x, y, escada["sobe"])
+        return
 
+    # Cada célula exibe a tranca ou os degraus da passagem.
+    for (x, y), escada in mundo.escadas.items():
+        tranca = escada.get("trancada")
+        
+        if tranca == "dourada":
+            _desenhar_fechadura(tela, x, y, (243, 211, 114))  # Dourado
+        elif tranca == "prata":
+            _desenhar_fechadura(tela, x, y, (192, 192, 192))  # Prateado
+        elif tranca == "espinhos" and _espinhos_ativos(mundo):
+            _desenhar_espinhos(tela, x, y)
+        else:
+            _desenhar_escada(tela, x, y, escada["sobe"])
 
 def _desenhar_escada(tela, x, y, sobe):
     # desenha visualmente os degraus da escada e uma seta indicando se sobe ou desce.
@@ -67,6 +96,7 @@ def identificando_buraco(mundo, x, y):
     if x < 0 or y < 0 or x >= TAMANHO_MAPA or y >= TAMANHO_MAPA:
         return False
     return mundo.grade[y][x] in BURACOS
+
 
 def atualizar_porta(mundo, jogador, dt):
     # Abre a ate duas celulas do centro do portao e fecha ao se afastar.
@@ -139,6 +169,7 @@ def _desenhar_bau(tela, x, y):
     for cor, (dx, dy, largura, altura) in detalhes:
         pygame.draw.rect(tela, cor, (px + dx, py + dy, largura, altura))
 
+
 #verificar se há algum baú perto
 def obter_bau_proximo(mundo, jogador):
     jx, jy = jogador.grade_x, jogador.grade_y
@@ -147,6 +178,7 @@ def obter_bau_proximo(mundo, jogador):
         if (bx, by) in mundo.baus and mundo.grade[by][bx] == BAU_FECHADO:
             return (bx, by)
     return None
+
 
 def _desenhar_bau_aberto(tela, x, y):
     px, py = x * TAMANHO_CELULA, y * TAMANHO_CELULA
@@ -160,3 +192,57 @@ def _desenhar_bau_aberto(tela, x, y):
     )
     for cor, (dx, dy, largura, altura) in detalhes:
         pygame.draw.rect(tela, cor, (px + dx, py + dy, largura, altura))
+
+# Desenha a fechadura para os cadeados dourado (norte) e prateado (leste)
+def _desenhar_fechadura(tela, x, y, cor):
+    px, py = x * TAMANHO_CELULA, y * TAMANHO_CELULA
+    pygame.draw.rect(tela, (30, 30, 30), (px, py, TAMANHO_CELULA, TAMANHO_CELULA))
+    
+    # Cor prata para a porta lado leste
+    if cor == (192, 192, 192):  
+        cor_base = (200, 205, 215)      
+        cor_brilho = (245, 248, 255)    
+        cor_sombra = (120, 125, 135)    
+    # Cor dourada para a porta lado norte
+    else:  
+        cor_base = cor
+        cor_brilho = (255, 255, 200)
+        cor_sombra = (150, 130, 50)
+
+    # Corpo do cadeado com efeito metálico
+    pygame.draw.rect(tela, cor_sombra, (px + 12, py + 15, 16, 14), border_radius=2)
+    pygame.draw.rect(tela, cor_base, (px + 12, py + 14, 16, 13), border_radius=2)
+    
+    # Arco do cadeado
+    pygame.draw.arc(tela, cor_base, (px + 14, py + 6, 12, 14), 0, 3.14, 3)
+    
+    # Detalhe de brilho (reflexo no metal)
+    pygame.draw.line(tela, cor_brilho, (px + 14, py + 15), (px + 14, py + 22), 2)
+    
+    # Buraco da fechadura
+    pygame.draw.rect(tela, (20, 20, 20), (px + 18, py + 18, 4, 6))
+    
+# Desenha a fechadura de espinhos para a porta oeste
+def _desenhar_espinhos(tela, x, y):
+    px, py = x * TAMANHO_CELULA, y * TAMANHO_CELULA
+    pygame.draw.rect(tela, (30, 30, 30), (px, py, TAMANHO_CELULA, TAMANHO_CELULA))
+    
+    # Desenha os espinhos na horizontal (apontando para a direita, saindo da parede oeste)
+    for offset_y in [6, 18]:
+        pontos = [
+            (px + 4, py + offset_y),         # Base esquerda (junto à parede)
+            (px + 26, py + offset_y + 4),    # Ponta afiada à direita
+            (px + 4, py + offset_y + 8)      # Base esquerda
+        ]
+        pygame.draw.polygon(tela, (150, 160, 170), pontos)
+        # Linha de reflexo de luz no espinho
+        pygame.draw.line(tela, (220, 230, 240), (px + 4, py + offset_y + 4), (px + 22, py + offset_y + 4), 1)
+        
+            
+def desenhar_inimigos(tela, mundo):
+    if hasattr(mundo, "inimigos"):
+        for inimigo in mundo.inimigos:
+            px = inimigo["x"] * TAMANHO_CELULA
+            py = inimigo["y"] * TAMANHO_CELULA
+            # Desenha um quadrado vermelho sólido para cada inimigo
+            pygame.draw.rect(tela, (220, 50, 50), (px + 4, py + 4, TAMANHO_CELULA - 8, TAMANHO_CELULA - 8))
