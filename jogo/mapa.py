@@ -46,6 +46,8 @@ def desenhar_mapa(tela, mundo, imagens):
                 tela.blit(imagens[nome_imagem], (x * TAMANHO_CELULA, y * TAMANHO_CELULA))
             if bloco == BAU_FECHADO:
                 _desenhar_bau(tela, x, y)
+            elif bloco == BAU_ABERTO:
+                _desenhar_bau_aberto(tela, x, y)
 
     # desenha as escadas por cima do piso nas posições cadastradas no mundo.
     for (x, y), escada in mundo.escadas.items():

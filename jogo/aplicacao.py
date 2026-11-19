@@ -204,9 +204,12 @@ class Aplicacao:
         if posicao not in self.mundo.escadas:
             return
         escada = self.mundo.escadas[posicao]
+        destino = self.mundos.get(escada["destino"])
+        if destino is None:
+            return
         if self.mundo.ident == "lobby":
             self.mundo.abertura_porta = 0.0
-        self.mundo = self.mundos[escada["destino"]]
+        self.mundo = destino
         self.jogador.definir_posicao(escada["x"], escada["y"])
         self.tutorial_aberto = False
 
