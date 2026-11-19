@@ -62,6 +62,7 @@ class Jogador:
         self.game_over = False
 
         self.inventario = []
+        self.slot_selecionado = 0
 
         self.tempo_cooldown_ataque = 0.0  # Tempo restante para o próximo ataque
         self.duracao_cooldown = 0.24     # Intervalo em segundos entre os ataques
@@ -281,10 +282,16 @@ class Jogador:
             self.tempo_parado = 1.0
             self.em_movimento = False
 
+    @property
+    def item_selecionado(self):
+        if self.slot_selecionado < len(self.inventario):
+            return self.inventario[self.slot_selecionado]
+        return None
+
     def ataque(self, inimigos=None):
         # executa um ataque básico na célula adjacente para a qual o jogador está olhando.
         if (
-            "Espada" not in self.inventario
+            self.item_selecionado != "Espada"
             or self.tempo_cooldown_ataque > 0.0
             or self.tempo_parado > 0
             or self.atacando
