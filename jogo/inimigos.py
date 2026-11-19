@@ -1,12 +1,10 @@
 from random import choice, randint
 
-import pygame
-
 from jogo.configuracoes import TAMANHO_CELULA, VELOCIDADE
 from jogo.mapa import identificando_buraco, pode_andar
 
 
-FPS_CAMINHADA = 18
+FPS_CAMINHADA = 8
 MULTIPLICADOR_VELOCIDADE = 0.5
 
 
@@ -20,6 +18,7 @@ class inimigos:
         self.destino_x = grade_x
         self.destino_y = grade_y
         self.em_movimento = False
+        self.tempo_caminhada = 0.0
         self.direcao = (0, 0)
         self.passos_restantes = 0
         self.tempo_invulneravel = 0.0
@@ -88,6 +87,11 @@ class inimigos:
                 self.x += diferenca_x * proporcao
                 self.y += diferenca_y * proporcao
 
+        if self.em_movimento:
+            self.tempo_caminhada += dt
+        elif self.tempo_parado > 0:
+            self.tempo_caminhada = 0.0
+
         # reduz os cronômetros de invulnerabilidade e pausa.
         self.tempo_invulneravel -= dt
         if self.tempo_invulneravel < 0:
@@ -97,12 +101,7 @@ class inimigos:
         if self.tempo_parado < 0:
             self.tempo_parado = 0.0
 
-    def desenhar(self, tela):
-        # desenha o retângulo do inimigo na tela, piscando enquanto estiver invulnerável.
-        if not self.morto:
-            if self.tempo_invulneravel <= 0 or int(self.tempo_invulneravel * 12) % 2 == 0:
-                pygame.draw.rect(
-                    tela,
-                    (200, 50, 50),
-                    (round(self.x), round(self.y), TAMANHO_CELULA, TAMANHO_CELULA),
-                )
+    def desenhar(self, tela, quadros):
+        if not self.morto and int(self.tempo_invulneravel * 12) % 2 == 0:
+            quadro = int(self.tempo_caminhada * FPS_CAMINHADA) % len(quadros)
+            tela.blit(quadros[quadro], (round(self.x), round(self.y)))

@@ -1,5 +1,6 @@
 import pygame
 
+from jogo.arte_inimigo import carregar_esqueleto
 from jogo.configuracoes import PASTA_ASSETS, TAMANHO_CELULA
 
 
@@ -31,7 +32,7 @@ def _carregar_animacao_piskel(nome, colunas, linhas):
     for linha in range(linhas):
         for coluna in range(colunas):
             pose = folha.subsurface((coluna * largura, linha * altura, largura, altura))
-            # A ultima linha da corrida tem apenas um quadro; ignora as celulas vazias.
+            # Algumas folhas têm células vazias depois do último quadro.
             if pose.get_bounding_rect().width > 0:
                 quadros.append(pygame.transform.scale(pose, (TAMANHO_CELULA, TAMANHO_CELULA)))
     return quadros
@@ -57,11 +58,15 @@ def carregar_imagens():
     # Carrega a espada base (apontando para a direita) caso utilize
     espada_base = _carregar_espada("espada.png")
     return {
+        "esqueleto": carregar_esqueleto(),
         "respiracao_direita": respiracao_direita,
         "respiracao_esquerda": [pygame.transform.flip(quadro, True, False)
                                for quadro in respiracao_direita],
         "caminhada_costas": _carregar_animacao_piskel(
             "movimento_jogador/caminhada_costas.png", 3, 4
+        ),
+        "caminhada_frente": _carregar_animacao_piskel(
+            "movimento_jogador/caminhada_frente.png", 3, 4
         ),
         "caminhada_direita": caminhada_direita,
         "caminhada_esquerda": [pygame.transform.flip(quadro, True, False)
