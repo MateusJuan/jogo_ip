@@ -22,4 +22,4 @@ ZOOM_CAMERA = 1.5
 VELOCIDADE = 270
 
 # título exibido na barra superior da janela.
-TITULO = "Lost Ruins: Hords of Dooms"
+TITULO = "Lost Ruins: Hords of Doom"
