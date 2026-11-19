@@ -14,18 +14,19 @@ from jogo.blocos import (
     TORRE_PILAR,
 )
 from jogo.configuracoes import TAMANHO_MAPA
+from jogo.inimigos import inimigos
 
 
 class Mundo:
     # representa um andar do castelo com identificador, nome, matriz de blocos e escadas.
-    def __init__(self, ident, nome, grade, escadas, baus=None):
+    def __init__(self, ident, nome, grade, escadas, baus=None, inimigos=None):
         self.ident = ident
         self.nome = nome
         self.grade = grade
         self.escadas = escadas
         self.baus = baus or {} #depois colcoar a espada dentro do bau da entrada da masmorra
         self.abertura_porta = 0.0
-        self.porta_ativada = False
+        self.inimigos = inimigos or [] # lista de inimigos presentes neste mundo 
 
 
 def criar_mundos():
@@ -156,7 +157,10 @@ def _criar_galeria():
     escadas = {}
     escadas.update(_escada("sul", "salao", 8, 1, False))
     escadas.update(_escada("norte", "torre", 8, 15, True))
-    return Mundo("galeria", "Andar 2 - Galeria", grade, escadas)
+    lista_inimigos = [inimigos(4, 10), inimigos(6, 4)]
+    return Mundo("galeria", "Andar 2 - Galeria", grade, escadas, inimigos=lista_inimigos)
+    
+
 
 
 def _criar_torre():

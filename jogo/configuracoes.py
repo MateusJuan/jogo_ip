@@ -11,6 +11,8 @@ ALTURA = TAMANHO_MAPA * TAMANHO_CELULA
 # taxa de atualização da tela (quadros por segundo).
 FPS = 60
 
+SLOTS_INVENTARIO = 5
+
 # aproxima a camera: cada pixel do mundo ocupa dois pixels na janela.
 ZOOM_CAMERA = 1.5
 
@@ -20,4 +22,4 @@ ZOOM_CAMERA = 1.5
 VELOCIDADE = 270
 
 # título exibido na barra superior da janela.
-TITULO = "Lost Ruins: Hords of Dooms"
+TITULO = "Lost Ruins: Hords of Doom"
