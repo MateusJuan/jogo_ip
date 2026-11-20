@@ -86,6 +86,7 @@ def carregar_imagens():
         "torre_altar": _carregar("torre_altar.png"),
         "personagem": _carregar("movimento_jogador/parado_direita.png", com_alpha=True),
         "personagem_costas": _carregar_costas(),
+        "muro_labirinto": _carregar("muro_labirinto.jpg"),
         # Imagens da espada integradas sem perder nada
         "espada": espada_base,
         "ataque_direita": _carregar_animacao_piskel(

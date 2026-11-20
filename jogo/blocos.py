@@ -13,6 +13,7 @@ TORRE_PAREDE = 10
 TORRE_ALTAR = 11
 BAU_FECHADO = 12
 BAU_ABERTO = 13
+MURO_LABIRINTO = 14
 
 # lista de blocos que fazem o personagem cair e perder vida (usamos lista no lugar de set).
 BURACOS = [
@@ -30,6 +31,7 @@ SOLIDOS = [
     TORRE_PILAR,
     TORRE_PAREDE,
     TORRE_ALTAR,
+    MURO_LABIRINTO,
 ]
 
 # dicionário que liga o número do bloco na matriz ao nome da imagem carregada em recursos.py.
@@ -48,4 +50,5 @@ IMAGENS = {
     TORRE_PILAR: "torre_pilar",
     TORRE_PAREDE: "torre_parede",
     TORRE_ALTAR: "torre_altar",
+    MURO_LABIRINTO: "muro_labirinto",
 }

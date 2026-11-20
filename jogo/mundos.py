@@ -12,6 +12,7 @@ from jogo.blocos import (
     TORRE_CHAO,
     TORRE_PAREDE,
     TORRE_PILAR,
+    MURO_LABIRINTO,
 )
 from jogo.configuracoes import TAMANHO_MAPA
 from jogo.inimigos import inimigos
@@ -37,11 +38,13 @@ def criar_mundos():
     salao = _criar_salao()
     galeria = _criar_galeria()
     torre = _criar_torre()
+    labirinto = _criar_labirinto()
     return {
         lobby.ident: lobby,
         salao.ident: salao,
         galeria.ident: galeria,
         torre.ident: torre,
+        labirinto.ident: labirinto
     }
 
 
@@ -132,8 +135,10 @@ def _criar_salao():
     # Porta Leste: Trancada por fechadura de prata
     escadas.update(_escada("leste", "ala_leste", 1, 8, True, trancada="prata"))
     
-    # Porta Oeste: Bloqueada por espinhos de combate
-    escadas.update(_escada("oeste", "ala_oeste_a", 15, 8, True, trancada="espinhos"))
+    # Porta Oeste (Ala Oeste): Leva para o Labirinto
+    for x, y in _celulas_portao("oeste"):
+        grade[y][x] = SALAO_CHAO
+    escadas.update(_escada("oeste", "labirinto", 15, 8, True, trancada = "espinhos"))
 
     lista_inimigos = [inimigos(6, 6), inimigos(10, 6), inimigos(6, 10), inimigos(10, 10)]
     return Mundo("salao", "Andar 1 - Salão Central", grade, escadas, inimigos=lista_inimigos)
@@ -166,3 +171,54 @@ def _criar_torre():
         grade[y][x] = TORRE_PILAR
     escadas = _escada("sul", "galeria", 8, 1, False)
     return Mundo("torre", "Andar 3 - Torre", grade, escadas)
+
+
+def _criar_labirinto():
+    # Inicia a grade toda como chão transitável e fecha as bordas externas (vermelhas na imagem)
+    grade = _grade(GRAMA)
+    _borda(grade, GALERIA_PAREDE)
+
+    # --- PAREDES INTERNAS (blocos verdes da imagem) ---
+    # Canto superior esquerdo (L invertido)
+    _preencher(grade, 2, 2, 2, 9, MURO_LABIRINTO)
+    _preencher(grade, 3, 2, 6, 2, MURO_LABIRINTO)
+
+    # Coluna centro-esquerda superior e barra horizontal central
+    _preencher(grade, 6, 2, 6, 6, MURO_LABIRINTO)
+    _preencher(grade, 5, 6, 10, 6, MURO_LABIRINTO)
+
+    # Coluna centro-direita superior e inferior (parede vertical contínua)
+    _preencher(grade, 10, 2, 10, 11, MURO_LABIRINTO)
+
+    # Canto superior direito (L invertido)
+    _preencher(grade, 13, 2, 14, 2, MURO_LABIRINTO)
+    _preencher(grade, 13, 3, 13, 7, MURO_LABIRINTO)
+
+    # Pilar central-esquerdo (ao lado do objetivo vermelho)
+    _preencher(grade, 5, 7, 5, 11, MURO_LABIRINTO)
+
+    # Bloco inferior esquerdo (formato de garfo/E)
+    _preencher(grade, 2, 11, 7, 11, MURO_LABIRINTO)
+    _preencher(grade, 4, 12, 4, 14, MURO_LABIRINTO)
+    _preencher(grade, 2, 14, 3, 14, MURO_LABIRINTO)
+    _preencher(grade, 7, 12, 7, 14, MURO_LABIRINTO)
+
+    # Bloco inferior direito (conectado até a borda sul)
+    _preencher(grade, 13, 9, 13, 15, MURO_LABIRINTO)
+    _preencher(grade, 10, 11, 12, 11, MURO_LABIRINTO)
+    _preencher(grade, 9, 14, 12, 14, MURO_LABIRINTO)
+
+    # --- OBJETIVO CENTRAL (bloco vermelho no centro da imagem) ---
+    # Colocado em (8, 8) como um baú fechado (pode trocar por TORRE_ALTAR ou outro bloco)
+    grade[8][8] = BAU_FECHADO
+    baus = {(8, 8): ["Chave de Prata"]}
+
+    # --- PORTÃO DE ENTRADA / SAÍDA (Lado Leste) ---
+    # Mantém a abertura no leste (x=16, y=7..9) para o jogador entrar em (15, 8) e voltar ao salão
+    escadas = {}
+    escadas.update(_escada("leste", "salao", 1, 8, False))
+
+    lista_inimigos = [inimigos(4, 8), inimigos(4, 9)]
+
+    return Mundo("labirinto", "Labirinto", grade, escadas, baus=baus, inimigos=lista_inimigos)
+
