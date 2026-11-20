@@ -15,7 +15,10 @@ class CanalSimulado:
     def __init__(self):
         self.volume = 0.0
         self.ativo = False
+        self.som_atual = None
         self.inicios = []
+        self.volumes_ao_iniciar = []
+        self.paradas = []
 
     def set_volume(self, volume):
         self.volume = volume
@@ -25,15 +28,20 @@ class CanalSimulado:
 
     def play(self, som, loops):
         self.ativo = True
+        self.som_atual = som
         self.inicios.append((som, loops))
+        self.volumes_ao_iniciar.append(self.volume)
 
     def stop(self):
+        self.paradas.append((self.som_atual, self.volume))
         self.ativo = False
+        self.som_atual = None
 
 
 class ControleDeTrilhasTest(unittest.TestCase):
     def setUp(self):
         self.canais = [CanalSimulado(), CanalSimulado()]
+        self.canal = self.canais[0]
         patches = [
             patch("jogo.audio.pygame.mixer.get_init", return_value=(44100, -16, 2)),
             patch("jogo.audio.pygame.mixer.get_num_channels", return_value=8),
@@ -51,7 +59,7 @@ class ControleDeTrilhasTest(unittest.TestCase):
         self.trilha = TrilhaSonora()
 
     def iniciar_entrada(self):
-        self.trilha.tocar_mapa("lobby")
+        self.trilha.tocar_mapa("lobby", reiniciar=True)
         self.trilha.atualizar(TEMPO_TRANSICAO)
 
     def test_repetir_pedido_do_mapa_nao_reinicia_a_musica(self):
@@ -59,99 +67,127 @@ class ControleDeTrilhasTest(unittest.TestCase):
         for _ in range(90):
             self.trilha.tocar_mapa("lobby")
             self.trilha.atualizar(1 / 60)
-        self.assertEqual(len(self.canais[0].inicios), 1)
-        self.assertEqual(self.canais[0].inicios[0], (str(PASTA_MUSICAS / "01_entrada.mp3"), -1))
-        self.assertEqual(self.canais[0].volume, VOLUME_MUSICA)
-        # A troca de mapa não depende de decodificação ou leitura do disco.
+        self.assertEqual(self.canal.inicios, [(str(PASTA_MUSICAS / "01_entrada.mp3"), -1)])
+        self.assertEqual(self.canal.volume, VOLUME_MUSICA)
         self.assertEqual(self.carregar_som.call_count, 2)
 
-    def test_as_duas_faixas_se_sobrepoem_durante_a_transicao(self):
+    def test_proxima_faixa_so_comeca_apos_zerar_e_parar_a_atual(self):
         self.iniciar_entrada()
         self.trilha.tocar_mapa("salao")
-        self.assertTrue(all(canal.ativo for canal in self.canais))
-        self.assertEqual(self.canais[1].volume, 0.0)
-        self.trilha.atualizar(TEMPO_TRANSICAO / 2)
-        self.assertTrue(all(canal.ativo for canal in self.canais))
-        for canal in self.canais:
-            self.assertAlmostEqual(canal.volume, VOLUME_MUSICA / 2 ** 0.5)
-        self.trilha.atualizar(TEMPO_TRANSICAO / 2)
-        self.assertFalse(self.canais[0].ativo)
-        self.assertTrue(self.canais[1].ativo)
-        self.assertEqual(self.canais[1].volume, VOLUME_MUSICA)
+        self.assertEqual(len(self.canal.inicios), 1)
+        self.trilha.atualizar(TEMPO_TRANSICAO / 4)
+        self.assertEqual(len(self.canal.inicios), 1)
+        self.assertEqual(self.trilha.faixa_atual, "lobby")
+        self.assertAlmostEqual(self.canal.volume, VOLUME_MUSICA / 2)
+        self.trilha.atualizar(TEMPO_TRANSICAO / 4)
+        self.assertEqual(self.canal.paradas[-1], (str(PASTA_MUSICAS / "01_entrada.mp3"), 0.0))
+        self.assertEqual(self.canal.inicios[-1], (str(PASTA_MUSICAS / "02_salao.mp3"), -1))
+        self.assertEqual(self.canal.volumes_ao_iniciar[-1], 0.0)
+        self.assertEqual(self.canal.volume, 0.0)
         self.assertEqual(self.trilha.faixa_atual, "salao")
+        self.trilha.atualizar(TEMPO_TRANSICAO / 4)
+        self.assertAlmostEqual(self.canal.volume, VOLUME_MUSICA / 2)
+        self.trilha.atualizar(TEMPO_TRANSICAO / 4)
+        self.assertEqual(self.canal.volume, VOLUME_MUSICA)
         self.musica_stream.fadeout.assert_not_called()
         self.assertEqual(self.carregar_som.call_count, 2)
 
-    def test_mistura_nao_cria_buraco_de_volume_nem_pico_de_potencia(self):
+    def test_volume_gradual_limitado_e_sem_sobreposicao(self):
         self.iniciar_entrada()
         self.trilha.tocar_mapa("salao")
         for _ in range(180):
+            antes = self.canal.volume
             self.trilha.atualizar(TEMPO_TRANSICAO / 180)
-            potencia = sum(canal.volume ** 2 for canal in self.canais)
-            self.assertAlmostEqual(potencia, VOLUME_MUSICA ** 2, places=12)
-            self.assertTrue(all(0 <= canal.volume <= VOLUME_MUSICA for canal in self.canais))
+            self.assertLessEqual(abs(self.canal.volume - antes), 0.01)
+            self.assertTrue(all(0 <= c.volume <= VOLUME_MUSICA for c in self.canais))
+            self.assertLessEqual(sum(c.ativo for c in self.canais), 1)
+        self.assertEqual(self.trilha.faixa_atual, "salao")
+        self.assertAlmostEqual(self.canal.volume, VOLUME_MUSICA)
 
-    def test_curva_comeca_gradualmente_e_dura_tres_segundos(self):
+    def test_curva_comeca_gradualmente_e_troca_no_meio_dos_tres_segundos(self):
         self.assertEqual(TEMPO_TRANSICAO, 3.0)
         self.iniciar_entrada()
         self.trilha.tocar_mapa("salao")
         self.trilha.atualizar(1 / 60)
-        self.assertLess(self.canais[1].volume, 0.001)
-        self.assertGreater(self.canais[0].volume, VOLUME_MUSICA - 0.001)
-        self.trilha.atualizar(0.5)
-        self.assertTrue(all(canal.ativo for canal in self.canais))
+        self.assertGreater(self.canal.volume, VOLUME_MUSICA - 0.001)
+        self.assertEqual(len(self.canal.inicios), 1)
+        self.trilha.atualizar(TEMPO_TRANSICAO / 2 - 1 / 60)
+        self.assertEqual(self.canal.volume, 0.0)
+        self.assertEqual(len(self.canal.inicios), 2)
+        self.trilha.atualizar(1 / 60)
+        self.assertLess(self.canal.volume, 0.001)
 
-    def test_voltar_durante_a_transicao_preserva_posicao_e_volumes(self):
+    def test_voltar_antes_do_silencio_cancela_a_troca_sem_reiniciar(self):
         self.iniciar_entrada()
         self.trilha.tocar_mapa("salao")
-        self.trilha.atualizar(TEMPO_TRANSICAO / 3)
-        antes = [canal.volume for canal in self.canais]
+        self.trilha.atualizar(TEMPO_TRANSICAO / 4)
+        antes = self.canal.volume
         self.trilha.tocar_mapa("lobby")
-        self.assertEqual([canal.volume for canal in self.canais], antes)
+        self.assertEqual(self.canal.volume, antes)
         self.trilha.atualizar(0)
-        for canal, volume in zip(self.canais, antes):
-            self.assertAlmostEqual(canal.volume, volume)
+        self.assertEqual(self.canal.volume, antes)
         self.trilha.atualizar(TEMPO_TRANSICAO)
         self.assertEqual(self.trilha.faixa_atual, "lobby")
-        self.assertEqual(len(self.canais[0].inicios), 1)
-        self.assertEqual(self.canais[0].volume, VOLUME_MUSICA)
-        self.assertFalse(self.canais[1].ativo)
+        self.assertEqual(len(self.canal.inicios), 1)
+        self.assertEqual(self.canal.volume, VOLUME_MUSICA)
 
-    def test_parar_no_meio_da_transicao_diminui_as_duas_faixas(self):
+    def test_parar_durante_a_saida_cancela_a_faixa_pendente(self):
         self.iniciar_entrada()
         self.trilha.tocar_mapa("salao")
-        self.trilha.atualizar(TEMPO_TRANSICAO / 2)
-        antes = [canal.volume for canal in self.canais]
+        self.trilha.atualizar(TEMPO_TRANSICAO / 4)
         self.trilha.parar()
-        self.trilha.atualizar(TEMPO_TRANSICAO / 2)
-        for canal, volume in zip(self.canais, antes):
-            self.assertAlmostEqual(canal.volume, volume / 2)
-        self.trilha.atualizar(TEMPO_TRANSICAO / 2)
-        self.assertFalse(any(canal.ativo for canal in self.canais))
+        self.trilha.atualizar(TEMPO_TRANSICAO / 4)
+        self.assertFalse(self.canal.ativo)
+        self.assertEqual(self.canal.volume, 0.0)
         self.assertIsNone(self.trilha.faixa_atual)
+        self.assertEqual(len(self.canal.inicios), 1)
+
+    def test_parar_durante_a_entrada_diminui_a_faixa_ativa(self):
+        self.iniciar_entrada()
+        self.trilha.tocar_mapa("salao")
+        self.trilha.atualizar(3 * TEMPO_TRANSICAO / 4)
+        self.assertEqual(self.trilha.faixa_atual, "salao")
+        antes = self.canal.volume
+        self.trilha.parar()
+        self.assertEqual(self.canal.volume, antes)
+        self.trilha.atualizar(TEMPO_TRANSICAO / 4)
+        self.assertAlmostEqual(self.canal.volume, antes / 2)
+        self.trilha.atualizar(TEMPO_TRANSICAO / 4)
+        self.assertFalse(self.canal.ativo)
+        self.assertEqual(len(self.canal.inicios), 2)
+
+    def test_resultado_independe_do_tamanho_dos_quadros(self):
+        for intervalos in ([TEMPO_TRANSICAO], [0.1] * 30, [1 / 60] * 180):
+            with self.subTest(intervalos=len(intervalos)):
+                self.iniciar_entrada()
+                self.trilha.tocar_mapa("salao")
+                for dt in intervalos:
+                    self.trilha.atualizar(dt)
+                self.assertEqual(self.trilha.faixa_atual, "salao")
+                self.assertAlmostEqual(self.canal.volume, VOLUME_MUSICA)
 
     def test_mapas_em_desenvolvimento_nao_recebem_trilhas(self):
         for mapa in ("galeria", "torre", "ala_leste", "ala_oeste"):
             with self.subTest(mapa=mapa):
-                self.trilha.tocar_mapa("lobby", reiniciar=True)
-                self.trilha.atualizar(TEMPO_TRANSICAO)
+                self.iniciar_entrada()
+                quantidade_inicios = len(self.canal.inicios)
                 self.trilha.tocar_mapa(mapa)
                 self.trilha.atualizar(TEMPO_TRANSICAO)
                 self.assertIsNone(self.trilha.faixa_atual)
-                self.assertFalse(any(canal.ativo for canal in self.canais))
+                self.assertFalse(any(c.ativo for c in self.canais))
+                self.assertEqual(len(self.canal.inicios), quantidade_inicios)
         self.assertEqual(self.carregar_som.call_count, 2)
 
-    def test_reiniciar_repete_a_entrada_desde_o_comeco(self):
+    def test_reiniciar_repete_a_entrada_desde_o_comeco_em_volume_zero(self):
         self.iniciar_entrada()
         self.trilha.tocar_mapa("salao")
-        self.trilha.atualizar(TEMPO_TRANSICAO / 2)
+        self.trilha.atualizar(TEMPO_TRANSICAO)
         self.trilha.tocar_mapa("lobby", reiniciar=True)
-        self.assertEqual(len(self.canais[0].inicios), 2)
-        self.assertFalse(self.canais[1].ativo)
-        self.assertTrue(all(canal.volume == 0.0 for canal in self.canais))
+        self.assertEqual(self.canal.volumes_ao_iniciar, [0.0, 0.0, 0.0])
+        self.assertEqual(self.canal.volume, 0.0)
         self.trilha.atualizar(TEMPO_TRANSICAO)
         self.assertEqual(self.trilha.faixa_atual, "lobby")
-        self.assertEqual(self.canais[0].volume, VOLUME_MUSICA)
+        self.assertEqual(self.canal.volume, VOLUME_MUSICA)
 
     def test_sem_dispositivo_de_audio_nao_tenta_reproduzir(self):
         carregamentos = self.carregar_som.call_count
@@ -163,7 +199,7 @@ class ControleDeTrilhasTest(unittest.TestCase):
             trilha.encerrar()
         self.assertFalse(trilha.disponivel)
         self.assertEqual(self.carregar_som.call_count, carregamentos)
-        self.assertFalse(any(canal.ativo for canal in self.canais))
+        self.assertFalse(any(c.ativo for c in self.canais))
 
     def test_arquivo_ausente_nao_interrompe_o_jogo_nem_repete_o_aviso(self):
         def carregar(caminho):
@@ -177,7 +213,7 @@ class ControleDeTrilhasTest(unittest.TestCase):
                 trilha.tocar_mapa("lobby")
                 trilha.atualizar(1 / 60)
         self.assertEqual(len(avisos.output), 1)
-        self.assertFalse(any(canal.ativo for canal in self.canais))
+        self.assertFalse(any(c.ativo for c in self.canais))
 
 
 class AudioNoJogoTest(unittest.TestCase):
@@ -196,19 +232,19 @@ class AudioNoJogoTest(unittest.TestCase):
         self.assertEqual(self.app.trilha.faixa_atual, "lobby")
         self.app.jogador.definir_posicao(8, 0)
         self.app._verificar_escada()
-        self.app.trilha.atualizar(TEMPO_TRANSICAO / 2)
+        self.app.trilha.atualizar(TEMPO_TRANSICAO / 4)
         self.assertTrue(pygame.mixer.Channel(0).get_busy())
-        self.assertTrue(pygame.mixer.Channel(1).get_busy())
-        self.assertAlmostEqual(
-            pygame.mixer.Channel(0).get_volume(), VOLUME_MUSICA / 2 ** 0.5, delta=0.01
-        )
-        self.assertAlmostEqual(
-            pygame.mixer.Channel(1).get_volume(), VOLUME_MUSICA / 2 ** 0.5, delta=0.01
-        )
-        self.app.trilha.atualizar(TEMPO_TRANSICAO / 2)
-        self.assertFalse(pygame.mixer.Channel(0).get_busy())
+        self.assertFalse(pygame.mixer.Channel(1).get_busy())
+        self.assertEqual(self.app.trilha.faixa_atual, "lobby")
+        self.assertAlmostEqual(pygame.mixer.Channel(0).get_volume(), VOLUME_MUSICA / 2, delta=0.01)
+        self.app.trilha.atualizar(TEMPO_TRANSICAO / 4)
         self.assertEqual(self.app.mundo.ident, "salao")
         self.assertEqual(self.app.trilha.faixa_atual, "salao")
+        self.assertEqual(pygame.mixer.Channel(0).get_volume(), 0.0)
+        self.assertEqual(pygame.mixer.Channel(0).get_sound(), self.app.trilha._sons["salao"])
+        self.assertFalse(pygame.mixer.Channel(1).get_busy())
+        self.app.trilha.atualizar(TEMPO_TRANSICAO / 2)
+        self.assertAlmostEqual(pygame.mixer.Channel(0).get_volume(), VOLUME_MUSICA, delta=0.01)
         self.assertTrue(pygame.mixer.get_busy())
         self.app.jogador.definir_posicao(8, 16)
         self.app._verificar_escada()
