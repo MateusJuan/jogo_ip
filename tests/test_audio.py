@@ -8,7 +8,7 @@ os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
 import pygame
 
-from jogo.audio import PASTA_MUSICAS, TEMPO_TRANSICAO, TrilhaSonora, VOLUME_MUSICA
+from jogo.audio import PASTA_MUSICAS, TEMPO_TRANSICAO, TRILHAS_MAPAS, TrilhaSonora, VOLUME_MUSICA
 
 
 class CanalSimulado:
@@ -69,7 +69,7 @@ class ControleDeTrilhasTest(unittest.TestCase):
             self.trilha.atualizar(1 / 60)
         self.assertEqual(self.canal.inicios, [(str(PASTA_MUSICAS / "01_entrada.mp3"), -1)])
         self.assertEqual(self.canal.volume, VOLUME_MUSICA)
-        self.assertEqual(self.carregar_som.call_count, 2)
+        self.assertEqual(self.carregar_som.call_count, len(TRILHAS_MAPAS))
 
     def test_proxima_faixa_so_comeca_apos_zerar_e_parar_a_atual(self):
         self.iniciar_entrada()
@@ -90,7 +90,7 @@ class ControleDeTrilhasTest(unittest.TestCase):
         self.trilha.atualizar(TEMPO_TRANSICAO / 4)
         self.assertEqual(self.canal.volume, VOLUME_MUSICA)
         self.musica_stream.fadeout.assert_not_called()
-        self.assertEqual(self.carregar_som.call_count, 2)
+        self.assertEqual(self.carregar_som.call_count, len(TRILHAS_MAPAS))
 
     def test_volume_gradual_limitado_e_sem_sobreposicao(self):
         self.iniciar_entrada()
@@ -176,7 +176,7 @@ class ControleDeTrilhasTest(unittest.TestCase):
                 self.assertIsNone(self.trilha.faixa_atual)
                 self.assertFalse(any(c.ativo for c in self.canais))
                 self.assertEqual(len(self.canal.inicios), quantidade_inicios)
-        self.assertEqual(self.carregar_som.call_count, 2)
+        self.assertEqual(self.carregar_som.call_count, len(TRILHAS_MAPAS))
 
     def test_reiniciar_repete_a_entrada_desde_o_comeco_em_volume_zero(self):
         self.iniciar_entrada()
@@ -251,6 +251,37 @@ class AudioNoJogoTest(unittest.TestCase):
         self.app.trilha.atualizar(TEMPO_TRANSICAO)
         self.assertEqual(self.app.mundo.ident, "lobby")
         self.assertEqual(self.app.trilha.faixa_atual, "lobby")
+
+    def test_labirinto_oeste_b_toca_sua_trilha_e_retorna_ao_salao(self):
+        self.assertEqual(TRILHAS_MAPAS["labirinto"], "04_abismo.mp3")
+        self.app.mundo = self.app.mundos["salao"]
+        for inimigo in self.app.mundo.inimigos:
+            inimigo.morto = True
+        self.app.trilha.tocar_mapa("salao")
+        self.app.trilha.atualizar(TEMPO_TRANSICAO)
+        self.app.jogador.definir_posicao(0, 8)
+        self.app._verificar_escada()
+        self.assertEqual(self.app.mundo.ident, "labirinto")
+        self.assertEqual(self.app.trilha.faixa_atual, "salao")
+        self.app.trilha.atualizar(TEMPO_TRANSICAO / 2)
+        self.assertEqual(self.app.trilha.faixa_atual, "labirinto")
+        self.assertEqual(pygame.mixer.Channel(0).get_volume(), 0.0)
+        self.assertEqual(
+            pygame.mixer.Channel(0).get_sound(), self.app.trilha._sons["labirinto"]
+        )
+        self.app.trilha.atualizar(TEMPO_TRANSICAO / 2)
+        self.assertTrue(pygame.mixer.Channel(0).get_busy())
+        self.assertAlmostEqual(
+            pygame.mixer.Channel(0).get_volume(), VOLUME_MUSICA, delta=0.01
+        )
+        self.app.jogador.definir_posicao(16, 8)
+        self.app._verificar_escada()
+        self.app.trilha.atualizar(TEMPO_TRANSICAO)
+        self.assertEqual(self.app.mundo.ident, "salao")
+        self.assertEqual(self.app.trilha.faixa_atual, "salao")
+        self.assertEqual(
+            pygame.mixer.Channel(0).get_sound(), self.app.trilha._sons["salao"]
+        )
 
     def test_vitoria_para_a_trilha_e_enter_reinicia_a_entrada(self):
         self.app.trilha.tocar_mapa("lobby")

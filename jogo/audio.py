@@ -10,6 +10,7 @@ PASTA_MUSICAS = Path(__file__).resolve().parent.parent / "assets" / "musicas"
 TRILHAS_MAPAS = {
     "lobby": "01_entrada.mp3",
     "salao": "02_salao.mp3",
+    "labirinto": "04_abismo.mp3",
 }
 VOLUME_MUSICA = 0.5
 TEMPO_TRANSICAO = 3.0
