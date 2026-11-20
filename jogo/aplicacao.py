@@ -3,7 +3,7 @@ import random
 from .blocos import SOLIDOS
 
 from jogo.configuracoes import (
-    ALTURA, FPS, LARGURA, PASTA_ASSETS, SLOTS_INVENTARIO,
+    ALTURA, FPS, LARGURA, SLOTS_INVENTARIO,
     TAMANHO_CELULA, TAMANHO_MAPA, TITULO, ZOOM_CAMERA,
 )
 from jogo.jogador import Jogador
@@ -13,6 +13,7 @@ from jogo.blocos import BAU_ABERTO, TORRE_ALTAR
 from jogo.mapa import atualizar_porta, desenhar_mapa, obter_bau_proximo
 from jogo.textos import carregar_fonte, renderizar_texto
 from jogo.inimigos import inimigos
+from jogo.audio import TrilhaSonora
 
 
 TECLAS_MOVIMENTO = (
@@ -40,6 +41,7 @@ class Aplicacao:
         }
         self.mundos = criar_mundos()
         self.mundo = self.mundos["lobby"]
+        self.trilha = TrilhaSonora()
         self.jogador = self._criar_jogador()
         self.rodando = True
         self.vitoria = False
@@ -70,10 +72,7 @@ class Aplicacao:
         )
 
     def executar(self):
-        if pygame.mixer.get_init():
-            pygame.mixer.music.load(PASTA_ASSETS + "/trilha_sonora.mp3")
-            pygame.mixer.music.set_volume(0.5)
-            pygame.mixer.music.play(loops=-1)
+        self.trilha.tocar_mapa(self.mundo.ident)
 
         # loop principal do jogo: processa eventos, atualiza a lógica e redesenha a tela a cada quadro.
         while self.rodando:
@@ -97,11 +96,15 @@ class Aplicacao:
                         self.jogador.levar_dano(1.0)
 
                 self._verificar_escada()
+            if self.jogador.game_over:
+                self.trilha.parar()
+            self.trilha.atualizar(dt)
             self._desenhar()
             if self.tempo_mensage > 0 and not self._tutorial_visivel() and not self.inventario_aberto:
                 self.tempo_mensage -= dt
                 if self.tempo_mensage <= 0:
                     self.mensagem_bau = ""
+        self.trilha.encerrar()
         pygame.quit()
 
     def _eventos(self):
@@ -159,6 +162,7 @@ class Aplicacao:
                 elif evento.key == pygame.K_f:
                     if self._perto_do_altar():
                         self.vitoria = True
+                        self.trilha.parar()
                     else:
                         self._interagir_bau()
 
@@ -215,6 +219,7 @@ class Aplicacao:
         if self.mundo.ident == "lobby":
             self.mundo.abertura_porta = 0.0
         self.mundo = destino
+        self.trilha.tocar_mapa(self.mundo.ident)
         self.jogador.definir_posicao(escada["x"], escada["y"])
         self.tutorial_aberto = False
 
@@ -230,6 +235,7 @@ class Aplicacao:
         self.tutorial_aberto = False
         self.inventario_aberto = False
         self.historico_teclas.clear()
+        self.trilha.tocar_mapa(self.mundo.ident, reiniciar=True)
 
     def _desenhar(self):
         if self.vitoria:
@@ -309,7 +315,6 @@ class Aplicacao:
                 (centro, y - 6), (centro + 6, y), (centro, y + 6), (centro - 6, y),
             ))
 
-        #add depois as musicas,gráficos,etc
         linhas = (
             (self.fonte_titulo, "Vitória!", ouro, 112),
             (self.fonte, TITULO, claro, 166),
@@ -321,7 +326,8 @@ class Aplicacao:
             (self.fonte, "Mateus Juan", claro, 440),
             (self.fonte, "Rodrigo Negreiros", claro, 470),
             (self.fonte, "Thalisson Matias", claro, 500),
-            (self.fonte, "[Enter] Jogar novamente     [Esc] Sair", ouro, 530),
+            (self.fonte, "Trilha sonora escrita por matewx_j", claro, 578),
+            (self.fonte, "[Enter] Jogar novamente     [Esc] Sair", ouro, 620),
         )
         for fonte, mensagem, cor, y in linhas:
             texto = renderizar_texto(fonte, mensagem, cor)
