@@ -274,10 +274,11 @@ class Jogador:
             self.em_movimento = False
         else:
             self.levar_dano(0.5)
-            if len(self.passos_seguros) >= 2:
+            #corrigido bug de ficar parado no ar quando cai da plataforma.
+            '''if len(self.passos_seguros) >= 2:
                 destino_seguro = self.passos_seguros[-2]
-            else:
-                destino_seguro = self.passos_seguros[0]
+            else:'''
+            destino_seguro = self.passos_seguros[0]
             self.definir_posicao(destino_seguro[0], destino_seguro[1])
             self.passos_seguros = [destino_seguro]
             self.tempo_parado = 1.0
