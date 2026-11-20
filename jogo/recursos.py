@@ -23,7 +23,7 @@ def _carregar_costas():
     return quadro
 
 
-def _carregar_animacao_piskel(nome, colunas, linhas):
+def _carregar_animacao_piskel(nome, colunas, linhas, largura_em_celulas=1):
     # Le os quadros na ordem de exportacao, preservando a celula e o movimento dos pes.
     folha = pygame.image.load(PASTA_ASSETS + "/" + nome).convert_alpha()
     largura = folha.get_width() // colunas
@@ -34,7 +34,8 @@ def _carregar_animacao_piskel(nome, colunas, linhas):
             pose = folha.subsurface((coluna * largura, linha * altura, largura, altura))
             # Algumas folhas têm células vazias depois do último quadro.
             if pose.get_bounding_rect().width > 0:
-                quadros.append(pygame.transform.scale(pose, (TAMANHO_CELULA, TAMANHO_CELULA)))
+                tamanho = (largura_em_celulas * TAMANHO_CELULA, TAMANHO_CELULA)
+                quadros.append(pygame.transform.scale(pose, tamanho))
     return quadros
 
 def _carregar_espada(nome):
@@ -86,8 +87,13 @@ def carregar_imagens():
         "personagem": _carregar("movimento_jogador/parado_direita.png", com_alpha=True),
         "personagem_costas": _carregar_costas(),
         # Imagens da espada integradas sem perder nada
-        "ataque_direita": espada_base,
-        "ataque_esquerda": pygame.transform.flip(espada_base, True, False),
+        "espada": espada_base,
+        "ataque_direita": _carregar_animacao_piskel(
+            "movimento_jogador/espada_direita.png", 2, 4, largura_em_celulas=2
+        ),
+        "ataque_esquerda": _carregar_animacao_piskel(
+            "movimento_jogador/espada_esquerda.png", 2, 4, largura_em_celulas=2
+        ),
         "ataque_costas": pygame.transform.rotate(espada_base, 90),
     }
 

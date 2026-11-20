@@ -36,7 +36,7 @@ class Aplicacao:
         self.fonte = carregar_fonte(20)
         self.imagens = carregar_imagens()
         self.icones_inventario = {
-            "Espada": pygame.transform.scale(self.imagens["ataque_direita"], (28, 28)),
+            "Espada": pygame.transform.scale(self.imagens["espada"], (28, 28)),
         }
         self.mundos = criar_mundos()
         self.mundo = self.mundos["lobby"]
@@ -67,6 +67,7 @@ class Aplicacao:
             ataque_direita=self.imagens["ataque_direita"],
             ataque_esquerda=self.imagens["ataque_esquerda"],
             ataque_costas=self.imagens["ataque_costas"],
+            ataque_frente=self.imagens["espada"],
         )
 
     def executar(self):

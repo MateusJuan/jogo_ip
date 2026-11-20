@@ -24,7 +24,7 @@ class Jogador:
     def __init__(
         self, grade_x, grade_y, imagem, imagem_costas, caminhada_direita,
         caminhada_esquerda, caminhada_costas, caminhada_frente, respiracao_direita, respiracao_esquerda,
-        ataque_direita=None, ataque_esquerda=None, ataque_costas=None
+        ataque_direita=None, ataque_esquerda=None, ataque_costas=None, ataque_frente=None
     ):
         # posição lógica na matriz (0 a 16).
         self.grade_x = grade_x
@@ -76,41 +76,10 @@ class Jogador:
         self.duracao_cooldown = 0.24     # Intervalo em segundos entre os ataques
         self.atacando = False             # Flag para indicar se está executando o ataque
 
-        # --- IMAGENS DE ATAQUE BLINDADAS ---
-        def _garantir_lista(val, padrao):
-            if val is None:
-                return [padrao]
-            if isinstance(val, list):
-                if len(val) > 0 and isinstance(val[0], list):
-                    return val[0]
-                return val
-            return [val]
-
-        self.ataque_direita = _garantir_lista(ataque_direita, imagem)
-        self.ataque_esquerda = _garantir_lista(ataque_esquerda, self.imagem_esquerda)
-        self.ataque_costas = _garantir_lista(ataque_costas, imagem_costas)
-        self.tempo_animacao_ataque = 0.0
-
-        self.inventario = []
-        self.slot_selecionado = 0
-
-        self.tempo_cooldown_ataque = 0.0  # Tempo restante para o próximo ataque
-        self.duracao_cooldown = 0.24     # Intervalo em segundos entre os ataques
-        self.atacando = False             # Flag para indicar se está executando o ataque
-
-        # --- IMAGENS DE ATAQUE BLINDADAS ---
-        def _garantir_lista(val, padrao):
-            if val is None:
-                return [padrao]
-            if isinstance(val, list):
-                if len(val) > 0 and isinstance(val[0], list):
-                    return val[0]
-                return val
-            return [val]
-
-        self.ataque_direita = _garantir_lista(ataque_direita, imagem)
-        self.ataque_esquerda = _garantir_lista(ataque_esquerda, self.imagem_esquerda)
-        self.ataque_costas = _garantir_lista(ataque_costas, imagem_costas)
+        self.ataque_direita = ataque_direita or [imagem]
+        self.ataque_esquerda = ataque_esquerda or [self.imagem_esquerda]
+        self.ataque_costas = ataque_costas
+        self.ataque_frente = ataque_frente
         self.tempo_animacao_ataque = 0.0
 
     def definir_posicao(self, grade_x, grade_y):
@@ -210,7 +179,16 @@ class Jogador:
         # desenha o personagem na tela, alternando a visibilidade para piscar quando invulnerável.
         if self.tempo_invulneravel <= 0 or int(self.tempo_invulneravel * 12) % 2 == 0:
             imagem = self.imagem if self.direcao_lateral == 1 else self.imagem_esquerda
-            if self.movendo_neste_quadro:
+            x = round(self.x)
+            dx, dy = self.direcao_olhar
+            if self.atacando and dx:
+                quadros = self.ataque_direita if dx > 0 else self.ataque_esquerda
+                progresso = self.tempo_animacao_ataque / self.duracao_cooldown
+                indice = min(int(progresso * len(quadros)), len(quadros) - 1)
+                imagem = quadros[indice]
+                if dx < 0:
+                    x -= imagem.get_width() - TAMANHO_CELULA
+            elif self.movendo_neste_quadro:
                 if self.direcao_olhar == (0, -1):
                     quadros = self.caminhada_costas
                 elif self.direcao_olhar == (0, 1):
@@ -230,25 +208,12 @@ class Jogador:
                     quadros = self.respiracao_esquerda
                 imagem = quadros[int(self.tempo_respiracao * 8) % len(quadros)]
 
-            tela.blit(imagem, (round(self.x), round(self.y)))
+            tela.blit(imagem, (x, round(self.y)))
 
-            if self.atacando:
-                dx, dy = self.direcao_olhar
-
-                if dx == 1:
-                    img_espada = self.ataque_direita[0] if isinstance(self.ataque_direita, list) else self.ataque_direita
-                elif dx == -1:
-                    img_espada = self.ataque_esquerda[0] if isinstance(self.ataque_esquerda, list) else self.ataque_esquerda
-                elif dy == -1:
-                    img_espada = self.ataque_costas[0] if isinstance(self.ataque_costas, list) else self.ataque_costas
-                else:
-                    img_espada = self.ataque_direita[0] if isinstance(self.ataque_direita, list) else self.ataque_direita
-
-                pos_espada_x = round(self.x + (dx * TAMANHO_CELULA))
-                pos_espada_y = round(self.y + (dy * TAMANHO_CELULA))
-
-                if isinstance(img_espada, pygame.Surface):
-                    tela.blit(img_espada, (pos_espada_x, pos_espada_y))
+            if self.atacando and dy:
+                img_espada = self.ataque_costas if dy < 0 else self.ataque_frente
+                if img_espada is not None:
+                    tela.blit(img_espada, (round(self.x), round(self.y + dy * TAMANHO_CELULA)))
 
     def _direcao(self, teclas, historico_teclas=None):
         # lê a pilha de teclas pressionadas do fim para o início (priorizando a mais recente).
