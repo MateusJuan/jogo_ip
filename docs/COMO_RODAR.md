@@ -102,7 +102,7 @@ python main.py
 * **Controles:** Use `W`, `A`, `S`, `D` ou as **setas direcionais** para andar pelo castelo.
 * **Navegação:** Pise nas escadas ao norte para subir de andar e ao sul para retornar ao andar anterior.
 * **Encerrar:** Feche a janela no botão `X` para encerrar o programa com segurança.
-* **Música:** A entrada e o salão central têm trilhas próprias, que repetem automaticamente e mudam com uma transição de volume ao trocar de mapa. Os demais mapas ainda não têm trilha associada. Reiniciar a partida também reinicia a música da entrada.
+* **Música:** A entrada e o salão central têm trilhas próprias, que repetem automaticamente. Na troca de mapa, as músicas se sobrepõem gradualmente durante três segundos. Os demais mapas ainda não têm trilha associada. Reiniciar a partida também reinicia a música da entrada.
 
 ---
 
