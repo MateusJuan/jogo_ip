@@ -133,7 +133,7 @@ def _criar_salao():
     escadas.update(_escada("leste", "ala_leste", 1, 8, True, trancada="prata"))
     
     # Porta Oeste: Bloqueada por espinhos de combate
-    escadas.update(_escada("oeste", "ala_oeste", 15, 8, True, trancada="espinhos"))
+    escadas.update(_escada("oeste", "ala_oeste_a", 15, 8, True, trancada="espinhos"))
 
     lista_inimigos = [inimigos(6, 6), inimigos(10, 6), inimigos(6, 10), inimigos(10, 10)]
     return Mundo("salao", "Andar 1 - Salão Central", grade, escadas, inimigos=lista_inimigos)
