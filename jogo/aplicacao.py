@@ -4,7 +4,7 @@ from .blocos import SOLIDOS
 
 from jogo.configuracoes import (
     ALTURA, FPS, LARGURA, PASTA_ASSETS, SLOTS_INVENTARIO,
-    TAMANHO_CELULA, TAMANHO_MAPA, TITULO, ZOOM_CAMERA,
+    TAMANHO_CELULA, TAMANHO_MAPA, TITULO, ZOOM_CAMERA,RAIO_VISAO_PADRAO, RAIO_VISAO_REDUZIDO,
 )
 from jogo.jogador import Jogador
 from jogo.mundos import criar_mundos
@@ -55,6 +55,8 @@ class Aplicacao:
         self.tutorial_aberto = False
         self.inventario_aberto = False
         self.historico_teclas = []
+        self.flechas = []
+        
 
     def _criar_jogador(self):
         return Jogador(
@@ -98,11 +100,15 @@ class Aplicacao:
                         self.jogador.levar_dano(1.0)
 
                 self._verificar_escada()
+                for flecha in self.flechas:
+                    flecha.atualizar(dt, self.mundo, self.mundo.inimigos)
+                self.flechas = [flecha for flecha in self.flechas if flecha.ativa]
             self._desenhar()
             if self.tempo_mensage > 0 and not self._tutorial_visivel() and not self.inventario_aberto:
                 self.tempo_mensage -= dt
                 if self.tempo_mensage <= 0:
                     self.mensagem_bau = ""
+            
         pygame.quit()
 
     def _eventos(self):
@@ -164,11 +170,11 @@ class Aplicacao:
                         self._interagir_bau()
 
                 elif evento.key == pygame.K_SPACE:
-                    self.jogador.ataque(self.mundo.inimigos)
-
-                elif evento.key == pygame.K_SPACE:
-                    self.jogador.ataque(self.mundo.inimigos)
-
+                    if self.jogador.item_selecionado == "Arco":
+                        self.jogador.atacar_arco(self.flechas)
+                    elif self.jogador.item_selecionado == "Espada":
+                        self.jogador.ataque(self.mundo.inimigos)
+                    
     def _tutorial_visivel(self):
         return self.tutorial_aberto and self.mundo.ident == "lobby" and not self.jogador.game_over
 
@@ -195,6 +201,8 @@ class Aplicacao:
             return
 
         self.mundo.grade[by][bx] = BAU_ABERTO
+        if self.mundo.ident == "labirinto":
+            self.mundo.visao_restaurada = True
         self.jogador.inventario.extend(itens)
         if "Espada" in itens:
             self.mensagem_bau = "Espada obtida! Pressione Espaço para atacar."
@@ -231,6 +239,7 @@ class Aplicacao:
         self.tutorial_aberto = False
         self.inventario_aberto = False
         self.historico_teclas.clear()
+        self.flechas = []
 
     def _desenhar(self):
         if self.vitoria:
@@ -244,6 +253,8 @@ class Aplicacao:
         for inimigo in self.mundo.inimigos:
             inimigo.desenhar(self.cena, self.imagens["esqueleto"])
         self.jogador.desenhar(self.cena)
+        for flecha in self.flechas:
+            flecha.desenhar(self.cena)
 
         # acompanha o centro do personagem e limita a camera nas bordas do mapa.
         self.camera.center = (
@@ -254,6 +265,7 @@ class Aplicacao:
         pygame.transform.scale(
             self.cena.subsurface(self.camera), self.tela.get_size(), self.tela
         )
+        self._desenhar_campo_de_visao(self._obter_raio_visao())
         self._desenhar_nome()
         self._desenhar_vida()
         self._desenhar_contador_inimigos()
@@ -548,7 +560,44 @@ class Aplicacao:
             superficie = renderizar_texto(self.fonte_opcao, rotulo, cor)
             retangulo = superficie.get_rect(center=(LARGURA // 2, ALTURA // 2 + 15 + indice * 44))
             self.tela.blit(superficie, retangulo)
-            
+
+
+    def _desenhar_campo_de_visao(self, raio):
+        if raio is None or raio <= 0:
+            return
+
+        # Posição do centro do jogador na tela (considerando o recorte da câmera e o zoom)
+        jogador_centro_x = (
+            (self.jogador.x + TAMANHO_CELULA / 2 - self.camera.x) * ZOOM_CAMERA
+        )
+        jogador_centro_y = (
+            (self.jogador.y + TAMANHO_CELULA / 2 - self.camera.y) * ZOOM_CAMERA
+        )
+        centro = (round(jogador_centro_x), round(jogador_centro_y))
+
+        sombra = pygame.Surface((LARGURA, ALTURA), pygame.SRCALPHA)
+        sombra.fill((2, 3, 6, 252))
+
+        # Borda suave: vai clareando os anéis externos até abrir o centro
+        passos = 6
+        raio_interno = int(raio * 0.65)
+        for i in range(passos, 0, -1):
+            r = raio_interno + int((raio - raio_interno) * (i / passos))
+            # Quanto menor o 'i', mais transparente fica a sombra (mais luz passa)
+            alpha_sombra = int(255 * (i / passos))
+            pygame.draw.circle(sombra, (2, 3, 6, alpha_sombra), centro, r)
+
+        # Abre totalmente o miolo do campo de visão
+        pygame.draw.circle(sombra, (0, 0, 0, 0), centro, raio_interno)
+
+        self.tela.blit(sombra, (0, 0))
+
+    def _obter_raio_visao(self):
+        # Exemplo: reduz o campo de visão no labirinto ou quando o jogador está com pouca vida
+        if self.mundo.ident == "labirinto" and not self.mundo.visao_restaurada:
+            return RAIO_VISAO_REDUZIDO
+        return None       
+
 def atualizar_inimigos(mundo):
     if not hasattr(mundo, "inimigos"):
         return
@@ -570,3 +619,4 @@ def atualizar_inimigos(mundo):
                 if mundo.grade[novo_y][novo_x] not in SOLIDOS:
                     inimigo["x"] = novo_x
                     inimigo["y"] = novo_y
+

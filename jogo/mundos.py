@@ -21,7 +21,7 @@ from jogo.plataformas import Plataforma
 
 class Mundo:
     # representa um andar do castelo com identificador, nome, matriz de blocos e escadas.
-    def __init__(self, ident, nome, grade, escadas, baus=None, inimigos=None, plataformas = None):
+    def __init__(self, ident, nome, grade, escadas, baus=None, inimigos=None, plataformas = None,raio_visao=None):
         self.ident = ident
         self.nome = nome
         self.grade = grade
@@ -30,7 +30,8 @@ class Mundo:
         self.abertura_porta = 0.0
         self.inimigos = inimigos or [] # lista de inimigos presentes neste mundo 
         self.plataformas = plataformas or []
-
+        self.raio_visao = raio_visao
+        self.visao_restaurada = False
 
 def criar_mundos():
     # instancia todos os 4 andares e retorna um dicionário indexado pelo identificador.
@@ -106,7 +107,7 @@ def _criar_lobby():
     _preencher(grade, 7, 12, 9, 15, GALERIA_CHAO)
     _preencher(grade, 6, 1, 12, 3, GALERIA_CHAO)
     grade[2][11] = BAU_FECHADO
-    baus = {(11, 2): ["Espada"]}
+    baus = {(11, 2): ["Espada","Arco"]}
     escadas = _escada("norte", "salao", 8, 15, True)
     plataformas = [
         Plataforma(2, 10, 3, 2, 2, 12, 1, 0.55),

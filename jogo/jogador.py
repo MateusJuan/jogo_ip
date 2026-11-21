@@ -2,6 +2,7 @@ import pygame
 
 from jogo.configuracoes import TAMANHO_CELULA, VELOCIDADE
 from jogo.mapa import identificando_buraco, pode_andar
+from jogo.arco import Flecha
 
 
 FPS_CAMINHADA = 18
@@ -181,7 +182,7 @@ class Jogador:
             imagem = self.imagem if self.direcao_lateral == 1 else self.imagem_esquerda
             x = round(self.x)
             dx, dy = self.direcao_olhar
-            if self.atacando and dx:
+            if self.atacando and dx and self.item_selecionado == "Espada":
                 quadros = self.ataque_direita if dx > 0 else self.ataque_esquerda
                 progresso = self.tempo_animacao_ataque / self.duracao_cooldown
                 indice = min(int(progresso * len(quadros)), len(quadros) - 1)
@@ -325,3 +326,27 @@ class Jogador:
                     )
                     if area_ataque.colliderect(rect_inimigo):
                         inimigo.levar_dano(1)
+
+    def atacar_arco(self, flechas):
+        # dispara uma flecha na direção do olhar caso o item selecionado seja "Arco".
+        if (
+            self.item_selecionado != "Arco"
+            or self.tempo_cooldown_ataque > 0.0
+            or self.tempo_parado > 0
+            or self.atacando
+        ):
+            return False
+
+        self.tempo_cooldown_ataque = self.duracao_cooldown * 1.25
+        self.tempo_animacao_ataque = 0.0
+        self.atacando = True
+
+        nova_flecha = Flecha(
+            x=self.x,
+            y=self.y,
+            direcao=self.direcao_olhar,
+            dano=1,
+            velocidade=450.0,
+        )
+        flechas.append(nova_flecha)
+        return True

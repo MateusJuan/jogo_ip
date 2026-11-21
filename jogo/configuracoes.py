@@ -23,3 +23,6 @@ VELOCIDADE = 270
 
 # título exibido na barra superior da janela.
 TITULO = "Lost Ruins: Hords of Doom"
+
+RAIO_VISAO_PADRAO = 220  # em pixels na tela
+RAIO_VISAO_REDUZIDO = 150
