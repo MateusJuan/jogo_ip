@@ -82,7 +82,11 @@ def _criar_entrada(grade):
     sorte = Random(83)
     largura = len(grade[0]) * CELULA
     altura = len(grade) * CELULA
-    arte = pygame.Surface((largura, altura))
+    # arte = pygame.Surface((largura, altura))
+    
+    # Modificação feita para rodar as animações no MacOS
+    arte = pygame.Surface((largura, altura), 0, 24)
+    
     arte.fill((13, 24, 29))
     for y in range(altura):
         c = round(5 * y / altura)
