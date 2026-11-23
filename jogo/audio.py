@@ -10,6 +10,7 @@ PASTA_MUSICAS = Path(__file__).resolve().parent.parent / "assets" / "musicas"
 TRILHAS_MAPAS = {
     "lobby": "01_entrada.mp3",
     "salao": "02_salao.mp3",
+    "labirinto": "04_abismo.ogg",
 }
 VOLUME_MUSICA = 0.5
 TEMPO_TRANSICAO = 3.0
@@ -40,7 +41,7 @@ class TrilhaSonora:
         self._canal.set_volume(0.0)
         for faixa, arquivo in TRILHAS_MAPAS.items():
             try:
-                # Decodificar na abertura evita carregar MP3 ao atravessar a porta.
+                # Decodificar na abertura evita carregar áudio ao atravessar a porta.
                 self._sons[faixa] = pygame.mixer.Sound(str(PASTA_MUSICAS / arquivo))
             except (pygame.error, OSError) as erro:
                 logger.warning("Não foi possível carregar a trilha %s: %s", faixa, erro)

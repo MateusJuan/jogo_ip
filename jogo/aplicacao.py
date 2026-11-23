@@ -99,11 +99,15 @@ class Aplicacao:
                         self.jogador.levar_dano(1.0)
 
                 self._verificar_escada()
+            if self.jogador.game_over:
+                self.trilha.parar()
+            self.trilha.atualizar(dt)
             self._desenhar()
             if self.tempo_mensage > 0 and not self._tutorial_visivel() and not self.inventario_aberto:
                 self.tempo_mensage -= dt
                 if self.tempo_mensage <= 0:
                     self.mensagem_bau = ""
+        self.trilha.encerrar()
         pygame.quit()
 
     def _eventos(self):
@@ -236,6 +240,7 @@ class Aplicacao:
         self.tutorial_aberto = False
         self.inventario_aberto = False
         self.historico_teclas.clear()
+        self.trilha.tocar_mapa(self.mundo.ident, reiniciar=True)
 
     def _desenhar(self):
         if self.vitoria:

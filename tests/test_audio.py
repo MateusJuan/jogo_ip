@@ -69,7 +69,7 @@ class ControleDeTrilhasTest(unittest.TestCase):
             self.trilha.atualizar(1 / 60)
         self.assertEqual(self.canal.inicios, [(str(PASTA_MUSICAS / "01_entrada.mp3"), -1)])
         self.assertEqual(self.canal.volume, VOLUME_MUSICA)
-        self.assertEqual(self.carregar_som.call_count, 2)
+        self.assertEqual(self.carregar_som.call_count, 3)
 
     def test_proxima_faixa_so_comeca_apos_zerar_e_parar_a_atual(self):
         self.iniciar_entrada()
@@ -90,7 +90,7 @@ class ControleDeTrilhasTest(unittest.TestCase):
         self.trilha.atualizar(TEMPO_TRANSICAO / 4)
         self.assertEqual(self.canal.volume, VOLUME_MUSICA)
         self.musica_stream.fadeout.assert_not_called()
-        self.assertEqual(self.carregar_som.call_count, 2)
+        self.assertEqual(self.carregar_som.call_count, 3)
 
     def test_volume_gradual_limitado_e_sem_sobreposicao(self):
         self.iniciar_entrada()
@@ -176,7 +176,7 @@ class ControleDeTrilhasTest(unittest.TestCase):
                 self.assertIsNone(self.trilha.faixa_atual)
                 self.assertFalse(any(c.ativo for c in self.canais))
                 self.assertEqual(len(self.canal.inicios), quantidade_inicios)
-        self.assertEqual(self.carregar_som.call_count, 2)
+        self.assertEqual(self.carregar_som.call_count, 3)
 
     def test_reiniciar_repete_a_entrada_desde_o_comeco_em_volume_zero(self):
         self.iniciar_entrada()
@@ -225,7 +225,7 @@ class AudioNoJogoTest(unittest.TestCase):
         self.app.trilha.encerrar()
         pygame.quit()
 
-    def test_mp3_reais_e_troca_de_mapa_pelas_escadas(self):
+    def test_audio_real_e_troca_de_mapa_pelas_escadas(self):
         self.app.trilha.tocar_mapa(self.app.mundo.ident)
         self.app.trilha.atualizar(TEMPO_TRANSICAO)
         self.assertTrue(pygame.mixer.get_busy())
@@ -246,6 +246,20 @@ class AudioNoJogoTest(unittest.TestCase):
         self.app.trilha.atualizar(TEMPO_TRANSICAO / 2)
         self.assertAlmostEqual(pygame.mixer.Channel(0).get_volume(), VOLUME_MUSICA, delta=0.01)
         self.assertTrue(pygame.mixer.get_busy())
+        self.app.jogador.definir_posicao(0, 8)
+        self.app._verificar_escada()
+        self.app.trilha.atualizar(TEMPO_TRANSICAO)
+        self.assertEqual(self.app.mundo.ident, "labirinto")
+        self.assertEqual(self.app.trilha.faixa_atual, "labirinto")
+        self.assertTrue(pygame.mixer.Channel(0).get_busy())
+        self.assertEqual(pygame.mixer.Channel(0).get_sound(), self.app.trilha._sons["labirinto"])
+        self.assertAlmostEqual(pygame.mixer.Channel(0).get_volume(), VOLUME_MUSICA, delta=0.01)
+        self.assertFalse(pygame.mixer.Channel(1).get_busy())
+        self.app.jogador.definir_posicao(16, 8)
+        self.app._verificar_escada()
+        self.app.trilha.atualizar(TEMPO_TRANSICAO)
+        self.assertEqual(self.app.mundo.ident, "salao")
+        self.assertEqual(self.app.trilha.faixa_atual, "salao")
         self.app.jogador.definir_posicao(8, 16)
         self.app._verificar_escada()
         self.app.trilha.atualizar(TEMPO_TRANSICAO)
@@ -276,6 +290,41 @@ class AudioNoJogoTest(unittest.TestCase):
         pygame.event.post(pygame.event.Event(pygame.QUIT))
         self.app.executar()
         self.assertFalse(pygame.get_init())
+        self.assertFalse(self.app.trilha.disponivel)
+        self.assertEqual(self.app.trilha._sons, {})
+
+    def test_loop_principal_aumenta_volume_e_troca_a_trilha(self):
+        quadros = 0
+
+        def verificar_audio():
+            nonlocal quadros
+            quadros += 1
+            if quadros == 30:
+                self.assertEqual(self.app.trilha.faixa_atual, "lobby")
+                self.assertTrue(pygame.mixer.Channel(0).get_busy())
+                self.assertAlmostEqual(
+                    pygame.mixer.Channel(0).get_volume(), VOLUME_MUSICA, delta=0.01
+                )
+                self.app.jogador.definir_posicao(8, 0)
+            elif quadros == 90:
+                self.assertEqual(self.app.mundo.ident, "salao")
+                self.assertEqual(self.app.trilha.faixa_atual, "salao")
+                self.assertTrue(pygame.mixer.Channel(0).get_busy())
+                self.assertAlmostEqual(
+                    pygame.mixer.Channel(0).get_volume(), VOLUME_MUSICA, delta=0.01
+                )
+                self.app.jogador.game_over = True
+            elif quadros == 120:
+                self.assertFalse(pygame.mixer.get_busy())
+                self.assertIsNone(self.app.trilha.faixa_atual)
+                self.app.rodando = False
+
+        with patch.object(self.app, "clock") as clock, patch.object(
+            self.app, "_desenhar", side_effect=verificar_audio
+        ):
+            clock.tick.return_value = 50
+            self.app.executar()
+        self.assertEqual(quadros, 120)
 
 
 if __name__ == "__main__":

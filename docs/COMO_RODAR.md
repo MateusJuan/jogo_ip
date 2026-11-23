@@ -102,7 +102,7 @@ python main.py
 * **Controles:** Use `W`, `A`, `S`, `D` ou as **setas direcionais** para andar pelo castelo.
 * **Navegação:** Pise nas escadas ao norte para subir de andar e ao sul para retornar ao andar anterior.
 * **Encerrar:** Feche a janela no botão `X` para encerrar o programa com segurança.
-* **Música:** A entrada e o salão central têm trilhas próprias, que repetem automaticamente. Na troca de mapa, a faixa atual baixa até zero; só então a próxima começa do início em volume zero e aumenta gradualmente até o volume definido. Cada etapa dura 1,5 segundo. Os demais mapas ainda não têm trilha associada. Reiniciar a partida também reinicia a música da entrada.
+* **Música:** A entrada, o salão central e a Ala Oeste (labirinto) têm trilhas próprias, que repetem automaticamente. O labirinto usa a faixa 4, "Olhos sobre o abismo" (`04_abismo.ogg`). Na troca de mapa, a faixa atual baixa até zero; só então a próxima começa do início em volume zero e aumenta gradualmente até o volume definido. Cada etapa dura 1,5 segundo. Os demais mapas ainda não têm trilha associada. Reiniciar a partida também reinicia a música da entrada.
 
 ---
 
