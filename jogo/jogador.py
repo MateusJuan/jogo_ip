@@ -315,13 +315,21 @@ class Jogador:
         self.atacando = True
 
         dx, dy = self.direcao_olhar
-        # cria a area de ataque um bloco a frente e expande o raio ao redor dela.
+        folga_frente = round(TAMANHO_CELULA * 0.3)
+        folga_lado = -round(TAMANHO_CELULA * 0.2)
+
+        if dx != 0:
+            expansao_x, expansao_y = folga_frente, folga_lado
+        else:
+            expansao_x, expansao_y = folga_lado, folga_frente
+
+        # cria a area de ataque um bloco a frente com alcance frontal e largura reduzida.
         area_ataque = pygame.Rect(
             round(self.x + dx * TAMANHO_CELULA),
             round(self.y + dy * TAMANHO_CELULA),
             TAMANHO_CELULA,
             TAMANHO_CELULA,
-        ).inflate(round(TAMANHO_CELULA * 1.2), round(TAMANHO_CELULA * 1.2))
+        ).inflate(expansao_x, expansao_y)
 
         # verifica se algum inimigo vivo encostou na area do golpe.
         if inimigos is not None:

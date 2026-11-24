@@ -35,7 +35,7 @@ class inimigos:
                 self.morto = True
             else:
                 self.tempo_invulneravel = 0.2
-                self.tempo_parado = 0.5
+                self.tempo_parado = 1.0
             return True
         return False
 
