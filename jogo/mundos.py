@@ -182,7 +182,7 @@ def _criar_torre():
     _preencher(grade, 7, 2, 9, 3, TORRE_ALTAR)
     for x, y in ((3, 4), (13, 4), (3, 9), (13, 9), (4, 13), (12, 13)):
         grade[y][x] = TORRE_PILAR
-    escadas = _escada("sul", "galeria", 8, 1, False)
+    escadas = _escada("sul", "salao", 8, 1, False)
     return Mundo("torre", "Andar 3 - Torre", grade, escadas)
 
 

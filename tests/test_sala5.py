@@ -268,6 +268,13 @@ class Sala5NoJogoTest(unittest.TestCase):
         self.app.jogador.atualizar(0.2, self.teclas, salao)
         self.app._verificar_escada()
         self.assertEqual(self.app.mundo.ident, "torre")
+        self.assertEqual((self.app.jogador.grade_x, self.app.jogador.grade_y), (8, 15))
+        torre = self.app.mundo
+        self.assertTrue(self.app.jogador._comecar_passo(0, 1, torre))
+        self.app.jogador.atualizar(0.2, self.teclas, torre)
+        self.app._verificar_escada()
+        self.assertIs(self.app.mundo, salao)
+        self.assertEqual((self.app.jogador.grade_x, self.app.jogador.grade_y), (8, 1))
 
     def test_chave_de_prata_nao_abre_a_porta_norte(self):
         self.app.mundo = self.app.mundos["salao"]
