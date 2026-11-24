@@ -184,7 +184,7 @@ def _criar_torre():
         grade[y][x] = TORRE_PILAR
     escadas = _escada("sul", "salao", 8, 1, False)
     return Mundo("torre", "Andar 3 - Torre", grade, escadas)
-
+#
 
 def _criar_labirinto():
     # Inicia a grade toda como chão transitável e fecha as bordas externas (vermelhas na imagem)
