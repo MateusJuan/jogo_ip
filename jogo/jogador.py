@@ -3,6 +3,7 @@ import pygame
 from jogo.configuracoes import TAMANHO_CELULA, VELOCIDADE
 from jogo.mapa import identificando_buraco, pode_andar
 from jogo.arco import Flecha
+from jogo.lagarto import ferir_lagarto, retangulo_lagarto
 
 
 FPS_CAMINHADA = 18
@@ -291,7 +292,15 @@ class Jogador:
             return self.inventario[self.slot_selecionado]
         return None
 
-    def ataque(self, inimigos=None):
+    def receber_itens(self, itens):
+        self.inventario.extend(itens)
+        self.tem_espada = "Espada" in self.inventario
+        self.tem_arco = "Arco" in self.inventario
+        self.tem_chave_prata = "Chave de Prata" in self.inventario
+        self.tem_chave_dourada = "Chave Dourada" in self.inventario
+        self.tem_cajado = "Cajado Mágico" in self.inventario
+
+    def ataque(self, inimigos=None, chefe=False):
         # executa um ataque básico na célula adjacente para a qual o jogador está olhando.
         if (
             self.item_selecionado != "Espada"
@@ -326,6 +335,8 @@ class Jogador:
                     )
                     if area_ataque.colliderect(rect_inimigo):
                         inimigo.levar_dano(1)
+        if chefe and not chefe["morto"] and area_ataque.colliderect(retangulo_lagarto(chefe)):
+            ferir_lagarto(chefe, 1, "espada")
 
     def atacar_arco(self, flechas):
         # dispara uma flecha na direção do olhar caso o item selecionado seja "Arco".

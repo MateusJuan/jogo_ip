@@ -1,6 +1,7 @@
 import pygame
 
 from jogo.arte_inimigo import carregar_esqueleto
+from jogo.arte_lagarto import carregar_lagarto
 from jogo.configuracoes import PASTA_ASSETS, TAMANHO_CELULA
 
 
@@ -60,6 +61,7 @@ def carregar_imagens():
     espada_base = _carregar_espada("espada.png")
     return {
         "esqueleto": carregar_esqueleto(),
+        "lagarto": carregar_lagarto(),
         "respiracao_direita": respiracao_direita,
         "respiracao_esquerda": [pygame.transform.flip(quadro, True, False)
                                for quadro in respiracao_direita],

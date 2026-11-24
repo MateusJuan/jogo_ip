@@ -17,6 +17,7 @@ from jogo.blocos import (
 from jogo.configuracoes import TAMANHO_MAPA
 from jogo.inimigos import inimigos
 from jogo.plataformas import Plataforma
+from jogo.lagarto import criar_lagarto
 
 
 class Mundo:
@@ -32,20 +33,23 @@ class Mundo:
         self.plataformas = plataformas or []
         self.raio_visao = raio_visao
         self.visao_restaurada = False
+        self.chefe = False
 
 def criar_mundos():
-    # instancia todos os 4 andares e retorna um dicionário indexado pelo identificador.
+    # instancia as salas e preserva seus estados durante toda a partida.
     lobby = _criar_lobby()
     salao = _criar_salao()
     galeria = _criar_galeria()
     torre = _criar_torre()
     labirinto = _criar_labirinto()
+    ala_leste = _criar_ala_leste()
     return {
         lobby.ident: lobby,
         salao.ident: salao,
         galeria.ident: galeria,
         torre.ident: torre,
-        labirinto.ident: labirinto
+        labirinto.ident: labirinto,
+        ala_leste.ident: ala_leste,
     }
 
 
@@ -87,16 +91,14 @@ def _celulas_portao(lado):
 
 
 def _escada(lado, destino, x, y, sobe, trancada=None):
-    # mapeia as 3 células da escada para o andar de destino e a posição onde o jogador nasce.
+    # As três células da passagem compartilham o mesmo estado da fechadura.
+    passagem = {
+        "destino": destino, "x": x, "y": y, "sobe": sobe,
+        "trancada": trancada, "destrancada": False,
+    }
     resultado = {}
     for celula in _celulas_portao(lado):
-        resultado[celula] = {
-            "destino": destino, 
-            "x": x, 
-            "y": y, 
-            "sobe": sobe, 
-            "trancada": trancada
-        }
+        resultado[celula] = passagem
     return resultado
 
 
@@ -159,6 +161,16 @@ def _criar_galeria():
     escadas.update(_escada("norte", "torre", 8, 15, True))
     lista_inimigos = [inimigos(4, 10), inimigos(6, 4)]
     return Mundo("galeria", "Andar 2 - Galeria", grade, escadas, inimigos=lista_inimigos)
+
+
+def _criar_ala_leste():
+    # Arena livre; a entrada a oeste fica distante do lagarto no centro.
+    grade = _grade(SALAO_CHAO)
+    _borda(grade, SALAO_PAREDE)
+    escadas = _escada("oeste", "salao", 15, 8, False)
+    mundo = Mundo("ala_leste", "Sala 5 - Covil do Lagarto", grade, escadas)
+    mundo.chefe = criar_lagarto(8, 8)
+    return mundo
     
 
 

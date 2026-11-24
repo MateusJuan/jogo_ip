@@ -2,6 +2,7 @@ import pygame
 import random
 from .blocos import SOLIDOS
 
+from jogo.arte_portao import icone_chave
 from jogo.configuracoes import (
     ALTURA, FPS, LARGURA, SLOTS_INVENTARIO,
     TAMANHO_CELULA, TAMANHO_MAPA, TITULO, ZOOM_CAMERA,RAIO_VISAO_PADRAO, RAIO_VISAO_REDUZIDO,
@@ -9,11 +10,16 @@ from jogo.configuracoes import (
 from jogo.jogador import Jogador
 from jogo.mundos import criar_mundos
 from jogo.recursos import carregar_imagens
-from jogo.blocos import BAU_ABERTO, TORRE_ALTAR
-from jogo.mapa import atualizar_porta, desenhar_mapa, obter_bau_proximo
+from jogo.blocos import BAU_ABERTO, BAU_FECHADO, TORRE_ALTAR
+from jogo.mapa import (
+    CHAVES_PORTAS, atualizar_porta, desenhar_mapa, obter_bau_proximo, obter_porta_trancada_proxima,
+    porta_precisa_chave,
+)
 from jogo.textos import carregar_fonte, renderizar_texto
 from jogo.inimigos import inimigos
 from jogo.audio import TrilhaSonora
+from jogo.arco import Projetil
+from jogo.lagarto import atualizar_lagarto, desenhar_lagarto, retangulo_lagarto
 
 
 TECLAS_MOVIMENTO = (
@@ -38,6 +44,8 @@ class Aplicacao:
         self.imagens = carregar_imagens()
         self.icones_inventario = {
             "Espada": pygame.transform.scale(self.imagens["espada"], (28, 28)),
+            "Chave de Prata": icone_chave("prata"),
+            "Chave Dourada": icone_chave("dourada"),
         }
         self.mundos = criar_mundos()
         self.mundo = self.mundos["lobby"]
@@ -93,13 +101,11 @@ class Aplicacao:
                 )
                 atualizar_porta(self.mundo, self.jogador, dt)
 
-                for inimigo in self.mundo.inimigos:
-                    inimigo.atualizar(dt, self.mundo)
-                    if not inimigo.morto and (inimigo.grade_x, inimigo.grade_y) == (self.jogador.grade_x, self.jogador.grade_y):
-                        self.jogador.levar_dano(1.0)
-
-                self._verificar_escada()
+                self._atualizar_combate(dt)
+                if not self.jogador.game_over:
+                    self._verificar_escada()
             if self.jogador.game_over:
+                self._limpar_projeteis()
                 self.trilha.parar()
             self.trilha.atualizar(dt)
             self._desenhar()
@@ -166,14 +172,52 @@ class Aplicacao:
                     if self._perto_do_altar():
                         self.vitoria = True
                         self.trilha.parar()
-                    else:
+                    elif not self._interagir_porta():
                         self._interagir_bau()
 
                 elif evento.key == pygame.K_SPACE:
                     if self.jogador.item_selecionado == "Arco":
                         self.jogador.atacar_arco(self.flechas)
                     elif self.jogador.item_selecionado == "Espada":
-                        self.jogador.ataque(self.mundo.inimigos)
+                        self.jogador.ataque(self.mundo.inimigos, self.mundo.chefe)
+                        self._verificar_derrota_chefe()
+
+    def _limpar_projeteis(self):
+        for projetil in self.flechas:
+            projetil.ativa = False
+        self.flechas.clear()
+
+    def _verificar_derrota_chefe(self):
+        chefe = self.mundo.chefe
+        if chefe and chefe["morto"] and not chefe["recompensa_criada"]:
+            self._limpar_projeteis()
+            self.mundo.grade[8][12] = BAU_FECHADO
+            self.mundo.baus[(12, 8)] = ["Chave Dourada"]
+            chefe["recompensa_criada"] = True
+            self.mensagem_bau = "Lagarto derrotado! Um baú apareceu no covil."
+            self.tempo_mensage = 4.0
+
+    def _atualizar_combate(self, dt):
+        for inimigo in self.mundo.inimigos:
+            inimigo.atualizar(dt, self.mundo)
+            if not inimigo.morto and (inimigo.grade_x, inimigo.grade_y) == (self.jogador.grade_x, self.jogador.grade_y):
+                self.jogador.levar_dano(1.0)
+        self._verificar_derrota_chefe()
+        chefe = self.mundo.chefe
+        if chefe and not chefe["morto"] and not self.jogador.game_over:
+            for x, y, direcao in atualizar_lagarto(chefe, dt, self.jogador):
+                self.flechas.append(Projetil(x, y, direcao, dano=0.5, velocidade=240.0,
+                                            dono="lagarto", tipo_dano="fogo", tempo_vida=3.0))
+            jogador_area = pygame.Rect(round(self.jogador.x), round(self.jogador.y),
+                                       TAMANHO_CELULA, TAMANHO_CELULA)
+            if jogador_area.colliderect(retangulo_lagarto(chefe)):
+                self.jogador.levar_dano(0.5)
+        for projetil in self.flechas:
+            if not self.jogador.game_over:
+                projetil.atualizar(dt, self.mundo, self.mundo.inimigos, self.jogador, chefe)
+        self.flechas[:] = [projetil for projetil in self.flechas if projetil.ativa]
+        if self.jogador.game_over:
+            self._limpar_projeteis()
                     
     def _tutorial_visivel(self):
         return self.tutorial_aberto and self.mundo.ident == "lobby" and not self.jogador.game_over
@@ -189,6 +233,17 @@ class Aplicacao:
                     return True
         return False
 
+    def _interagir_porta(self):
+        porta = obter_porta_trancada_proxima(self.mundo, self.jogador)
+        if not porta:
+            return False
+        chave = CHAVES_PORTAS[porta["trancada"]]
+        if chave in self.jogador.inventario:
+            porta["destrancada"] = True
+            self.mensagem_bau = "Porta destrancada!"
+            self.tempo_mensage = 4.0
+        return True
+
     def _interagir_bau(self):
         pos_bau = obter_bau_proximo(self.mundo, self.jogador)
         if not pos_bau:
@@ -203,7 +258,7 @@ class Aplicacao:
         self.mundo.grade[by][bx] = BAU_ABERTO
         if self.mundo.ident == "labirinto":
             self.mundo.visao_restaurada = True
-        self.jogador.inventario.extend(itens)
+        self.jogador.receber_itens(itens)
         if "Espada" in itens:
             self.mensagem_bau = "Espada obtida! Pressione Espaço para atacar."
         else:
@@ -218,11 +273,14 @@ class Aplicacao:
         if posicao not in self.mundo.escadas:
             return
         escada = self.mundo.escadas[posicao]
+        if porta_precisa_chave(escada):
+            return
         destino = self.mundos.get(escada["destino"])
         if destino is None:
             return
         if self.mundo.ident == "lobby":
             self.mundo.abertura_porta = 0.0
+        self._limpar_projeteis()
         self.mundo = destino
         self.trilha.tocar_mapa(self.mundo.ident)
         self.jogador.definir_posicao(escada["x"], escada["y"])
@@ -240,6 +298,7 @@ class Aplicacao:
         self.tutorial_aberto = False
         self.inventario_aberto = False
         self.historico_teclas.clear()
+        self._limpar_projeteis()
         self.trilha.tocar_mapa(self.mundo.ident, reiniciar=True)
 
     def _desenhar(self):
@@ -251,6 +310,8 @@ class Aplicacao:
         # limpa a tela e desenha todas as camadas na ordem: mapa, jogador e interface (hud).
         self.cena.fill((0, 0, 0))
         desenhar_mapa(self.cena, self.mundo, self.imagens)
+        if self.mundo.chefe:
+            desenhar_lagarto(self.cena, self.mundo.chefe, self.imagens)
         for inimigo in self.mundo.inimigos:
             inimigo.desenhar(self.cena, self.imagens["esqueleto"])
         self.jogador.desenhar(self.cena)
@@ -270,6 +331,7 @@ class Aplicacao:
         self._desenhar_nome()
         self._desenhar_vida()
         self._desenhar_contador_inimigos()
+        self._desenhar_estado_chefe()
         self._desenhar_inventario()
         self._desenhar_mensagem_bau()
         if not self.jogador.game_over:
@@ -295,8 +357,12 @@ class Aplicacao:
     def _desenhar_dica_interacao(self):
         if self.jogador.em_movimento:
             return
+        porta = obter_porta_trancada_proxima(self.mundo, self.jogador)
         if self._perto_do_altar():
             dica = "[F] Ativar altar"
+        elif porta:
+            chave = CHAVES_PORTAS[porta["trancada"]]
+            dica = f"[F] Inserir {chave}" if chave in self.jogador.inventario else f"Requer {chave}"
         elif obter_bau_proximo(self.mundo, self.jogador):
             dica = "[F] Abrir baú"
         else:
@@ -448,6 +514,41 @@ class Aplicacao:
             painel.topleft = (12, 50)
             pygame.draw.rect(self.tela, (0, 0, 0), painel)
             self.tela.blit(contador, contador.get_rect(center=painel.center))
+
+    def _desenhar_estado_chefe(self):
+        chefe = self.mundo.chefe
+        if not chefe or chefe["morto"]:
+            return
+        fases = {
+            "preparacao": ("Preparando", "Saia da linha de fogo", (246, 186, 100)),
+            "ataque": ("Rajada", "Desvie das chamas", (255, 149, 101)),
+            "cooldown": ("Ofegante", "Ataque com a espada", (151, 226, 185)),
+        }
+        fase, mensagem, cor = fases[chefe["estado"]]
+        if chefe["tempo_bloqueio"] > 0:
+            mensagem = "Espere a brecha" if chefe["estado"] != "cooldown" else "Use a espada"
+        painel = pygame.Rect(0, 0, 374, 84)
+        painel.midbottom = (LARGURA // 2, ALTURA - 24)
+        pygame.draw.rect(self.tela, (19, 21, 27), painel.move(0, 4))
+        pygame.draw.rect(self.tela, (29, 30, 36), painel)
+        pygame.draw.rect(self.tela, (111, 85, 65), painel, 2)
+        for x in (painel.left, painel.right - 6):
+            for y in (painel.top, painel.bottom - 6):
+                pygame.draw.rect(self.tela, (164, 119, 73), (x, y, 6, 6))
+
+        titulo = renderizar_texto(self.fonte_tutorial_rotulo, "LAGARTO", (238, 222, 182))
+        estado = renderizar_texto(self.fonte_tutorial_rotulo, fase, cor)
+        self.tela.blit(titulo, (painel.left + 16, painel.top + 10))
+        self.tela.blit(estado, estado.get_rect(topright=(painel.right - 16, painel.top + 10)))
+        largura = (painel.width - 32) // chefe["vida_max"]
+        for indice in range(chefe["vida_max"]):
+            celula = pygame.Rect(painel.left + 16 + largura * indice, painel.top + 33, largura - 3, 10)
+            preenchida = indice < chefe["vida"]
+            pygame.draw.rect(self.tela, (179, 75, 53) if preenchida else (58, 47, 49), celula)
+            if preenchida:
+                pygame.draw.line(self.tela, (229, 127, 76), celula.topleft, celula.topright, 2)
+        texto = renderizar_texto(self.fonte, mensagem, cor)
+        self.tela.blit(texto, texto.get_rect(center=(painel.centerx, painel.top + 62)))
 
     def _desenhar_vida(self):
         # Cada caractere representa um pixel de 3x3, sem suavizacao.

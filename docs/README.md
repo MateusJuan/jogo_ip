@@ -8,6 +8,7 @@ Jogo de exploração de masmorra (*dungeon crawler*) desenvolvido para a discipl
 2. **Andar 1 – Salão:** Sala interna com obstáculos de entulho e acesso para o andar superior e inferior.
 3. **Andar 2 – Galeria:** Sala com abismos no piso e caminho estreito até a próxima escada.
 4. **Andar 3 – Torre:** Topo do castelo com pilares e altar central.
+5. **Sala 5 – Covil do Lagarto (Ala Leste):** Arena acessível pela porta Leste do salão com a Chave de Prata. Derrote o Lagarto para obter a Chave Dourada.
 
 ## Controles e Mecânicas Implementadas
 
@@ -21,6 +22,17 @@ Jogo de exploração de masmorra (*dungeon crawler*) desenvolvido para a discipl
 * **Sistema de Vida (HUD):** Barra superior esquerda com **3 corações** (suportando dano de `0.5` coração).
 * **Invulnerabilidade e Hitstun:** Ao sofrer dano, o personagem pisca enquanto está invulnerável e fica momentaneamente paralisado pelo impacto.
 * **Queda em Buracos:** Na Galeria, pisar em um buraco desconta `0.5` coração, paralisa o jogador por `1.0s` e o devolve para uma célula segura antes da beirada.
+
+## Sala 5 - Covil do Lagarto
+
+Pegue a **Chave de Prata** no baú do Labirinto e volte ao Salão Central. Chegue ao lado da porta Leste e pressione **F** para usar a chave. Depois de destrancar, atravesse a porta normalmente. A porta Oeste do covil permite retornar ao salão durante ou depois da luta.
+
+* **Preparação (1,2 s):** O Lagarto mira uma vez na sua posição. A linha amarela no chão anuncia a trajetória; saia dela antes da rajada.
+* **Rajada (0,8 s):** Quatro projéteis seguem a direção anunciada. Cada impacto ou contato com o Lagarto tira **meio coração**, respeitando a invulnerabilidade do jogador.
+* **Brecha (2,4 s):** O Lagarto para e fica ofegante, com indicação verde. Aproxime-se, selecione a **Espada** e use **Espaço**. Ele tem seis pontos de vida e uma breve proteção entre golpes. Flechas e golpes fora dessa janela não tiram vida; um contorno e uma mensagem indicam o bloqueio.
+* **Recompensa:** A derrota remove o fogo e faz aparecer um único baú com a **Chave Dourada**, aberto com **F**. Use a chave com **F** junto à porta Norte do salão. As portas destrancadas, a derrota e o baú persistem nas revisitas. Reiniciar a partida restaura as fechaduras e a arena.
+
+Flechas e fogo compartilham a base de projéteis, com dono e tipo de dano. Somem ao atingir paredes, limites ou alvos, ao trocar de sala, na derrota ou no reinício. O inventário ampliado pausa o combate.
 
 ## Padrão de Código (Restrições da Disciplina)
 
@@ -43,10 +55,14 @@ Todo o código segue estritamente as permissões das listas de Introdução à P
 | `jogo/blocos.py` | Códigos numéricos dos terrenos, listas de obstáculos/buracos e mapa de imagens. |
 | `jogo/recursos.py` | Carregamento e redimensionamento das imagens da pasta `assets/`. |
 | `jogo/mapa.py` | Verificação de colisão, detecção de buracos e renderização da grade e escadas. |
-| `jogo/mundos.py` | Construção das matrizes e ligações de escadas dos 4 andares. |
+| `jogo/mundos.py` | Construção das matrizes e ligações entre os mapas, incluindo a Ala Leste. |
+| `jogo/lagarto.py` | Estado do miniboss em dicionário, mira, cronômetros, vulnerabilidade e feedback visual. |
+| `jogo/arte_lagarto.py` | Sprite de pixels do Lagarto, gerado no mesmo estilo do esqueleto. |
+| `jogo/arco.py` | Base compartilhada de flechas e fogo hostil, colisão e dano. |
 | `jogo/jogador.py` | Estado do personagem, movimentação na grade, dano, piscar e histórico de passos seguros. |
 
 ## Como Começar
 
 * Para instalar e abrir o jogo na sua máquina, siga o **[COMO_RODAR.md](COMO_RODAR.md)**.
 * Para enviar suas alterações para o GitHub sem conflitos, siga o **[GUIA_GIT.md](GUIA_GIT.md)**.
+* Para validar as integrações, execute `python -m unittest discover -s tests -v`. A suíte da sala 5 cobre portas, combate, projéteis, recompensa, revisitas, pausa e reinício.
