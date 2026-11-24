@@ -112,9 +112,9 @@ def _criar_lobby():
     baus = {(11, 2): ["Espada","Arco"]}
     escadas = _escada("norte", "salao", 8, 15, True)
     plataformas = [
-        Plataforma(2, 10, 3, 2, 2, 12, 1, 0.55),
-        Plataforma(12, 7, 3, 3, 2, 12, -1, 0.35),
-        Plataforma(2, 4, 3, 3, 2, 12, 1, 0.20),
+        Plataforma(2, 10, 3, 2, 2, 12, 1, 0.38),
+        Plataforma(12, 7, 3, 3, 2, 12, -1, 0.32),
+        Plataforma(2, 4, 3, 3, 2, 12, 1, 0.28),
     ]
     return Mundo("lobby", "Entrada da Masmorra", grade, escadas, baus, plataformas=plataformas)
 
@@ -171,9 +171,6 @@ def _criar_ala_leste():
     mundo = Mundo("ala_leste", "Sala 5 - Covil do Lagarto", grade, escadas)
     mundo.chefe = criar_lagarto(8, 8)
     return mundo
-    
-
-
 
 def _criar_torre():
     # andar 3 (torre): topo do castelo com 6 pilares, altar ao norte e escada de volta.
