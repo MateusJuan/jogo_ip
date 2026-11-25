@@ -394,13 +394,13 @@ class Aplicacao:
             (self.fonte, TITULO, claro, 166),
             (self.fonte_opcao, "Créditos finais", ouro, 266),
             (self.fonte, "Cadeira: Introdução à Programação", claro, 304),
-            (self.fonte, "Matehus Mesquita", claro, 350),
-            (self.fonte, "Felipe Manoel", claro, 380),
-            (self.fonte, "Karllos Braga", claro, 410),
-            (self.fonte, "Mateus Juan", claro, 440),
+            (self.fonte, "Felipe Manoel", claro, 350),
+            (self.fonte, "Karllos Braga", claro, 380),
+            (self.fonte, "Mateus Juan", claro, 410),
+            (self.fonte, "Matheus Mesquita", claro, 440),
             (self.fonte, "Rodrigo Negreiros", claro, 470),
             (self.fonte, "Thalisson Matias", claro, 500),
-            (self.fonte, "Trilha sonora escrita por matewx_j", claro, 578),
+            (self.fonte, "Trilha sonora escrita por matewx_j (Mateus Juan)", claro, 578),
             (self.fonte, "[Enter] Jogar novamente     [Esc] Sair", ouro, 620),
         )
         for fonte, mensagem, cor, y in linhas:
